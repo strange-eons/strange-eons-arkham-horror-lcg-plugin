@@ -2,6 +2,3 @@
 .StrangeEons
 .DS_Store
 node_modules/
-# written by the build from gradle.properties
-ArkhamHorrorLCG/ArkhamHorrorLCG/resources/ArkhamHorrorLCG/version.properties
-ArkhamHorrorLCG/ArkhamHorrorLCGHD/resources/ArkhamHorrorLCG/version-hd.properties
