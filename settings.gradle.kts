@@ -10,3 +10,8 @@ pluginManagement {
 }
 
 rootProject.name = "StrangeEonsAHLCG"
+
+// Release bundles, packaged by org.strangeeons.plugin from the plug-in folders.
+include(":base", ":hd")
+project(":base").projectDir = file("ArkhamHorrorLCG/ArkhamHorrorLCG")
+project(":hd").projectDir = file("ArkhamHorrorLCG/ArkhamHorrorLCGHD")

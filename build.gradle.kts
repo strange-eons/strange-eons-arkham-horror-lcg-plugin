@@ -7,6 +7,7 @@ import org.strangeeons.gradle.rendertest.VerifyRenders
 plugins {
     id("org.strangeeons.render-test") version "1.0.1"
     id("net.researchgate.release") version "3.2.0"
+    id("org.strangeeons.plugin") version "1.0.0" apply false
 }
 
 val projects = "${System.getProperty("user.home")}/Projects"
@@ -51,21 +52,35 @@ val hdVersionFile = "ArkhamHorrorLCG/ArkhamHorrorLCGHD/resources/ArkhamHorrorLCG
 val writeBaseVersion = writePluginVersion("writeBaseVersion", baseVersionFile)
 val writeHdVersion = writePluginVersion("writeHdVersion", hdVersionFile)
 
+// Render tests only; release bundles come from the :base and :hd projects.
 tasks.named("packagePluginFolder") { dependsOn(writeBaseVersion) }
 
-val packageHdPluginFolder by tasks.registering(PackagePluginFolder::class) {
-    description = "Packages the HD templates plug-in folder into a bundle."
-    dependsOn(writeHdVersion)
-    folder = file("ArkhamHorrorLCG/ArkhamHorrorLCGHD")
-    bundle = layout.buildDirectory.file("bundles/ArkhamHorrorLCGHD.seext")
+// Each plug-in folder is its project's only resource directory, packed as
+// Strange Eons' Make Bundle would, with a freshly stamped catalog ID.
+fun Project.pluginBundle(bundle: String, writeVersion: TaskProvider<*>) {
+    apply(plugin = "org.strangeeons.plugin")
+    layout.buildDirectory = rootProject.layout.buildDirectory.dir("plugins/$name")
+    configure<org.strangeeons.gradle.plugin.StrangeEonsPluginExtension> {
+        bundleName = bundle
+        bundleType = "seext"
+        rootFile = layout.projectDirectory.file("eons-plugin")
+    }
+    the<SourceSetContainer>()["main"].resources {
+        setSrcDirs(listOf(projectDir))
+        exclude("seproject", "**/*.ts.js", "**/.*", "**/.*/**")
+    }
+    tasks.named("processResources") { dependsOn(writeVersion) }
 }
+
+project(":base") { pluginBundle("ArkhamHorrorLCG", writeBaseVersion) }
+project(":hd") { pluginBundle("ArkhamHorrorLCGHD", writeHdVersion) }
 
 // Release bundles; does not need Strange Eons or the src/renderTest submodule.
 val bundles by tasks.registering(Sync::class) {
     group = "build"
     description = "Collects the plug-in bundles into build/dist."
-    from(tasks.named<PackagePluginFolder>("packagePluginFolder").flatMap { it.bundle })
-    from(packageHdPluginFolder.flatMap { it.bundle })
+    from(project(":base").tasks.named("sePlugin"))
+    from(project(":hd").tasks.named("sePlugin"))
     into(layout.buildDirectory.dir("dist"))
 }
 
@@ -73,11 +88,61 @@ tasks.named("assemble") { dependsOn(bundles) }
 
 val verifyPluginVersions by tasks.registering {
     group = "verification"
-    description = "Checks version parsing and the version files in each bundle."
+    description = "Checks version parsing and each bundle's version file, catalog ID and contents."
     val dist = bundles.map { it.destinationDir }
     val version = project.version.toString()
-    inputs.files(bundles)
+    val pack = tasks.named<PackagePluginFolder>("packagePluginFolder").flatMap { it.bundle }
+    val rootFiles = mapOf(
+        "ArkhamHorrorLCG.seext" to file("ArkhamHorrorLCG/ArkhamHorrorLCG/eons-plugin"),
+        "ArkhamHorrorLCGHD.seext" to file("ArkhamHorrorLCG/ArkhamHorrorLCGHD/eons-plugin"),
+    )
+    inputs.files(bundles, pack)
+    inputs.files(rootFiles.values)
     doLast {
+        // entries of a bundle, skipping SE's 4-byte web-safe header if present
+        fun <T> readBundle(bundle: File, read: (java.util.zip.ZipInputStream) -> T): T {
+            val bytes = bundle.readBytes()
+            // SE strips the header from bundles it loads, so render tests
+            // leave the base bundle without one
+            val start = if (bytes[0] == 0x07.toByte() && bytes[1] == 0x88.toByte()) 4 else 0
+            return java.util.zip.ZipInputStream(bytes.inputStream(start, bytes.size - start)).use(read)
+        }
+
+        fun fileNames(bundle: File) = readBundle(bundle) { zip ->
+            generateSequence { zip.nextEntry }.filter { !it.isDirectory }.map { it.name }
+                .filter { !it.startsWith("META-INF/") }.toSortedSet()
+        }
+
+        // UUID to date fields of each catalog ID
+        val catalogId = Regex("""CATALOGU?E?ID\{([-\da-fA-F]+):([\d-]+)}""", RegexOption.IGNORE_CASE)
+        fun catalogIds(text: String) = catalogId.findAll(text)
+            .map { it.groupValues[1].lowercase() to it.groupValues[2].split('-').map(String::toInt) }.toList()
+
+        fun newer(a: List<Int>, b: List<Int>) =
+            a.zip(b).firstOrNull { (x, y) -> x != y }?.let { (x, y) -> x > y } ?: false
+
+        val files = fileNames(pack.get().asFile)
+        val shipped = fileNames(dist.get().resolve("ArkhamHorrorLCG.seext"))
+        check(shipped == files) {
+            "ArkhamHorrorLCG.seext differs from the render-test bundle: only shipped ${shipped - files}, " +
+                "only tested ${files - shipped}"
+        }
+
+        rootFiles.forEach { (bundle, source) ->
+            val text = readBundle(dist.get().resolve(bundle)) { zip ->
+                generateSequence { zip.nextEntry }.firstOrNull { it.name == "eons-plugin" }
+                    ?: throw GradleException("$bundle has no eons-plugin")
+                String(zip.readBytes(), Charsets.ISO_8859_1)
+            }
+            val before = catalogIds(source.readText(Charsets.ISO_8859_1))
+            val after = catalogIds(text)
+            check(before.isNotEmpty()) { "$source has no catalog ID" }
+            check(after.map { it.first } == before.map { it.first }) { "$bundle catalog UUIDs changed" }
+            before.zip(after).forEach { (b, a) ->
+                check(newer(a.second, b.second)) { "$bundle catalog ID ${a.second} is not newer than ${b.second}" }
+            }
+        }
+
         mapOf("10.0.0" to "10.0", "10.1.0-SNAPSHOT" to "10.1", "9.9.12" to "9.9").forEach { (v, se) ->
             check(seVersion(v) == se) { "seVersion($v) is ${seVersion(v)}, expected $se" }
         }
@@ -89,16 +154,12 @@ val verifyPluginVersions by tasks.registering {
             "ArkhamHorrorLCG.seext" to "resources/ArkhamHorrorLCG/version.properties",
             "ArkhamHorrorLCGHD.seext" to "resources/ArkhamHorrorLCG/version-hd.properties",
         ).forEach { (bundle, entry) ->
-            val bytes = dist.get().resolve(bundle).readBytes()
-            // skip SE's 4-byte web-safe header; SE strips it from bundles it
-            // loads, so render tests leave the base bundle without one
-            val start = if (bytes[0] == 0x07.toByte() && bytes[1] == 0x88.toByte()) 4 else 0
-            java.util.zip.ZipInputStream(bytes.inputStream(start, bytes.size - start)).use { zip ->
-                val found = generateSequence { zip.nextEntry }.firstOrNull { it.name == entry }
+            val actual = readBundle(dist.get().resolve(bundle)) { zip ->
+                generateSequence { zip.nextEntry }.firstOrNull { it.name == entry }
                     ?: throw GradleException("$bundle has no $entry")
-                val actual = java.util.Properties().apply { load(zip) }.toMap()
-                check(actual == expected) { "$bundle $entry is $actual, expected $expected" }
+                java.util.Properties().apply { load(zip) }.toMap()
             }
+            check(actual == expected) { "$bundle $entry is $actual, expected $expected" }
         }
     }
 }
