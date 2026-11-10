@@ -26,6 +26,32 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
         );
     }
 
+    // Bleed margins come from the <templateKey>-bleed-margin settings, so
+    // they are not saved with the component. Components saved by older
+    // versions have an explicit margin of 0, which overrides the settings;
+    // there is no API to unset it.
+    function clearBleedMargin(diy) {
+        try {
+            let field = Java.type('java.lang.Class')
+                .forName(
+                    'ca.cgjennings.apps.arkham.diy.DIY',
+                    false,
+                    diy.getClass().getClassLoader()
+                )
+                .getDeclaredField('hasExplicitBleedMargin');
+            field.setAccessible(true);
+            field.setBoolean(diy, false);
+        } catch (ex) {
+            common.Eons.log.warning(
+                'unable to clear bleed margin, using front face margin: ' + ex
+            );
+            diy.bleedMargin = diy.settings.getDouble(
+                diy.frontTemplateKey + '-bleed-margin',
+                0
+            );
+        }
+    }
+
     // card regions are relative to the trim edge
     function translateToTrim(g, sheet) {
         var bleed = bleedPixels(sheet);
@@ -327,6 +353,7 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
         plugin: plugin,
         isUsed: isUsed,
         bleedPixels: bleedPixels,
+        clearBleedMargin: clearBleedMargin,
         translateToTrim: translateToTrim,
         initBodyTags: initBodyTags,
         initCopyrightTags: initCopyrightTags,

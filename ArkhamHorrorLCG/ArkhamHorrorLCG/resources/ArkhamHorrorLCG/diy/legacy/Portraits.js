@@ -5,17 +5,17 @@
 // Module: returns { create, read, write, paint, mirrorButton, invertButton,
 // setFileFieldEnabled }.
 define([
+    'faces/FaceUtils',
     'faces/PortraitArt',
     'se/common',
     'se/imageutils',
     'se/java',
     'se/strings',
     'se/ui',
-], function (PortraitArt, common, imageutils, Java, strings, ui) {
+], function (FaceUtils, PortraitArt, common, imageutils, Java, strings, ui) {
     const DefaultPortrait = Java.type(
         'ca.cgjennings.apps.arkham.component.DefaultPortrait'
     );
-    const DIYClass = 'ca.cgjennings.apps.arkham.diy.DIY';
     const FACE_FRONT = 0;
     const FACE_BACK = 1;
     // old base key parts, and what replaced them
@@ -90,28 +90,6 @@ define([
         });
     }
 
-    // Bleed margins come from the <templateKey>-bleed-margin settings, so
-    // they are not saved with the component. Components saved by older
-    // versions have an explicit margin of 0, which overrides the settings;
-    // there is no API to unset it.
-    function clearBleedMargin(diy) {
-        try {
-            let field = Java.type('java.lang.Class')
-                .forName(DIYClass, false, diy.getClass().getClassLoader())
-                .getDeclaredField('hasExplicitBleedMargin');
-            field.setAccessible(true);
-            field.setBoolean(diy, false);
-        } catch (ex) {
-            common.Eons.log.warning(
-                'unable to clear bleed margin, using front face margin: ' + ex
-            );
-            diy.bleedMargin = diy.settings.getDouble(
-                diy.frontTemplateKey + '-bleed-margin',
-                0
-            );
-        }
-    }
-
     // Older versions chose Player and Encounter backs by saving a template
     // path over the face's template setting; the back type alone now selects
     // the template.
@@ -148,7 +126,7 @@ define([
     // anew. Older WeaknessEnemy and WeaknessTreachery saves have no
     // encounter portrait unless readEncounter.
     function read(card, diy, oos, readEncounter) {
-        clearBleedMargin(diy);
+        FaceUtils.clearBleedMargin(diy);
         clearTemplateOverrides(diy);
         card.portraitTypes.forEach(function (fullKey, index) {
             if (fullKey.split('-')[0] === 'Encounter' && !readEncounter) {

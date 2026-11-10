@@ -25,6 +25,7 @@ define([
     'handlers/CardVersion',
     'handlers/Collector',
     'handlers/TemplateReplacement',
+    'faces/FaceUtils',
     'se/diy',
     'se/imageutils',
     'se/strings',
@@ -35,6 +36,7 @@ define([
     CardVersion,
     Collector,
     TemplateReplacement,
+    FaceUtils,
     diyLibrary,
     imageutils,
     strings,
@@ -772,6 +774,7 @@ define([
     };
 
     FaceHandler.prototype.onRead = function (diy, ois) {
+        FaceUtils.clearBleedMargin(diy);
         this.upgrade(diy);
         // an older save lacks the settings the faces added since
         if (diy.version < this.version) {
