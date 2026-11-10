@@ -1,4 +1,6 @@
 AHLCG-GuideA4-Default-template = ArkhamHorrorLCG/templates/AHLCG-GuideA4Empty.jp2
+AHLCG-GuideA4Title-template = ArkhamHorrorLCG/templates/AHLCG-GuideA4Title.jp2
+AHLCG-GuideA4Empty-template = ArkhamHorrorLCG/templates/AHLCG-GuideA4Empty.jp2
 
 AHLCG-GuideA4-Name-region = 375,312,490,46
 AHLCG-GuideA4-Name-style = FAMILY: {Eons.namedObjects.AHLCGObject.titleFamily}; SIZE: 20.0; WEIGHT: {Eons.namedObjects.AHLCGObject.titleFontWeight}; WIDTH: 1.07; FOREGROUND: #FFFFFF

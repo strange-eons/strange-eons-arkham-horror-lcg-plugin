@@ -1,4 +1,6 @@
 AHLCG-GuideLetter-Default-template = ArkhamHorrorLCG/templates/AHLCG-GuideLetterEmpty.jp2
+AHLCG-GuideLetterTitle-template = ArkhamHorrorLCG/templates/AHLCG-GuideLetterTitle.jp2
+AHLCG-GuideLetterEmpty-template = ArkhamHorrorLCG/templates/AHLCG-GuideLetterEmpty.jp2
 
 AHLCG-GuideLetter-Name-region = 392,276,490,46
 AHLCG-GuideLetter-Name-style = FAMILY: {Eons.namedObjects.AHLCGObject.titleFamily}; SIZE: 20.0; WEIGHT: {Eons.namedObjects.AHLCGObject.titleFontWeight}; WIDTH: 1.07; FOREGROUND: #FFFFFF

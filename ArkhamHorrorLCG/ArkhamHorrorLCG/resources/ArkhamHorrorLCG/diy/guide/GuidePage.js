@@ -52,23 +52,40 @@ define([
         return card.get('PageType');
     }
 
+    // The image for the page's template, AHLCG-<type><page>-template; an
+    // even empty page mirrors it. A high resolution render uses the
+    // <key>-hires image where installed, and for an even empty page the
+    // AHLCG-<type>EmptyEven-template-hires image, which is already mirrored.
+    function templateImage(card, diy, sheet, type, page) {
+        var ImageUtils = imageutils.ImageUtils;
+        var key = 'AHLCG-' + type + page + '-template';
+        var even = page === 'Empty' && Number(card.get('Page')) % 2 === 0;
+        var hires = sheet.isHighResolutionRendering();
+        if (hires && even) {
+            var evenPath = diy.settings.get(
+                'AHLCG-' + type + 'EmptyEven-template-hires'
+            );
+            if (evenPath != null) return ImageUtils.get(evenPath);
+        }
+        var path = hires ? diy.settings.get(key + '-hires') : null;
+        var image = ImageUtils.get(path != null ? path : diy.settings.get(key));
+        return even ? ImageUtils.mirror(image, true, false) : image;
+    }
+
     // the page's template, with a title page's translated header and label
     function paintTemplate(card, g, diy, sheet, labelBox) {
         var ImageUtils = imageutils.ImageUtils;
         var type = card.type(sheet.getSheetIndex());
         var page = pageType(card);
-        var image = ImageUtils.get(
-            'ArkhamHorrorLCG/templates/AHLCG-' + type + page + '.jp2'
+        var base = ImageUtils.get(
+            diy.settings.get('AHLCG-' + type + page + '-template')
         );
-        var region = new common.Region(
-            0,
-            0,
-            image.getWidth(),
-            image.getHeight()
+        var region = new common.Region(0, 0, base.getWidth(), base.getHeight());
+        sheet.paintImage(
+            g,
+            templateImage(card, diy, sheet, type, page),
+            region
         );
-        if (page === 'Empty' && Number(card.get('Page')) % 2 === 0)
-            image = ImageUtils.mirror(image, true, false);
-        sheet.paintImage(g, image, region);
         if (page !== 'Title') return;
 
         var locale = String(PluginInfo.locale());

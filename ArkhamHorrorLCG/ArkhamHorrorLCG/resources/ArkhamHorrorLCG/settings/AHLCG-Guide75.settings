@@ -1,4 +1,6 @@
 AHLCG-Guide75-Default-template = ArkhamHorrorLCG/templates/AHLCG-Guide75Empty.jp2
+AHLCG-Guide75Title-template = ArkhamHorrorLCG/templates/AHLCG-Guide75Title.jp2
+AHLCG-Guide75Empty-template = ArkhamHorrorLCG/templates/AHLCG-Guide75Empty.jp2
 
 AHLCG-Guide75-Name-region = 340,283,445,42
 AHLCG-Guide75-Name-style = FAMILY: {Eons.namedObjects.AHLCGObject.titleFamily}; SIZE: 20.0; WEIGHT: {Eons.namedObjects.AHLCGObject.titleFontWeight}; WIDTH: 1.07; FOREGROUND: #FFFFFF

@@ -222,3 +222,8 @@ AHLCG-AgendaBackFace-template-hires = ArkhamHorrorLCG/hd/templates/AHLCG-AgendaB
 AHLCG-AgendaFrontPortraitFace-template-hires = ArkhamHorrorLCG/hd/templates/AHLCG-AgendaFrontPortrait.png
 AHLCG-AgendaPortraitFace-template-hires = ArkhamHorrorLCG/hd/templates/AHLCG-AgendaPortrait.png
 AHLCG-PortraitFace-template-hires = ArkhamHorrorLCG/hd/templates/AHLCG-Scenario.png
+
+# campaign guide page templates; the even page is the empty page mirrored
+AHLCG-Guide75Title-template-hires = ArkhamHorrorLCG/hd/templates/AHLCG-Guide75Title.jpg
+AHLCG-Guide75Empty-template-hires = ArkhamHorrorLCG/hd/templates/AHLCG-Guide75Empty.jpg
+AHLCG-Guide75EmptyEven-template-hires = ArkhamHorrorLCG/hd/templates/AHLCG-Guide75EmptyEven.jpg
