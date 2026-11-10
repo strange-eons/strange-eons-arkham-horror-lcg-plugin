@@ -11,19 +11,17 @@ define([
     'core/UserImages',
     'faces/FaceUtils',
     'se/common',
-    'se/imageutils',
-], function (UserImages, FaceUtils, common, imageutils) {
+    'se/java',
+], function (UserImages, FaceUtils, common, Java) {
+    const Color = Java.type('java.awt.Color');
     const FACE_FRONT = 0;
 
-    // clears the sheet, then translates g to the trim edge
+    // fills the sheet with opaque black, then translates g to the trim edge
     function clear(g, sheet) {
-        var w = sheet.getTemplateWidth();
-        var h = sheet.getTemplateHeight();
-        sheet.paintImage(
-            g,
-            imageutils.ImageUtils.create(w, h),
-            new common.Region(0, 0, w, h)
-        );
+        var paint = g.getPaint();
+        g.setPaint(Color.BLACK);
+        g.fillRect(0, 0, sheet.getTemplateWidth(), sheet.getTemplateHeight());
+        g.setPaint(paint);
         FaceUtils.translateToTrim(g, sheet);
     }
 
