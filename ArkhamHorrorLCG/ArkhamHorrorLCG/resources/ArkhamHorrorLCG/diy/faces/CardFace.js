@@ -20,6 +20,7 @@ define([
     'faces/Face',
     'faces/FaceUtils',
     'faces/PortraitArt',
+    'ui/SubtypeBinding',
     'se/imageutils',
     'se/markup',
     'se/strings',
@@ -30,6 +31,7 @@ define([
     Face,
     FaceUtils,
     PortraitArt,
+    SubtypeBinding,
     imageutils,
     markup,
     strings,
@@ -83,7 +85,11 @@ define([
 
     CardFace.prototype.setDefaults = function (diy, faceIndex, keep) {
         var values = this.defaultValues(diy, faceIndex);
-        if (this.subtypes != null) values.Subtype = 'None';
+        if (this.subtypes != null) {
+            let key = 'Subtype' + this.suffix(faceIndex);
+            if (!keep || String(diy.settings.get(key)) === 'None')
+                diy.settings.reset(key);
+        }
         if (this.hasUnique && !('Unique' in values)) values.Unique = '0';
         if (this.hasSubtitle) values.Subtitle = '';
         values.Artist = '';
@@ -119,7 +125,13 @@ define([
             return new ListItem(id, strings.string('AHLCG-WknType-' + id));
         });
         var list = new ui.comboBox(items, null);
-        this.bind(bindings, faceIndex, 'Subtype', list);
+        bindings.add(
+            'Subtype' + this.suffix(faceIndex),
+            list,
+            [faceIndex],
+            SubtypeBinding
+        );
+        this.boundControls.push(list);
         return list;
     };
 
