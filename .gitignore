@@ -2,3 +2,5 @@
 .StrangeEons
 .DS_Store
 node_modules/
+version.properties
+version-hd.properties
