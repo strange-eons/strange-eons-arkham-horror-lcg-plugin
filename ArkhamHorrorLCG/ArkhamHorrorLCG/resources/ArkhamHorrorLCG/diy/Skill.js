@@ -27,6 +27,7 @@ define([
             title: 'AHLCG-Template',
             legacyPortraits: [[0, 'Portrait'], 'Collection', 'Encounter'],
             upgradeChoices: function (diy) {
+                if (diy.version < 16) diy.settings.reset('BackStatBack');
                 PlayerBacks.upgrade(diy.settings);
             },
         })

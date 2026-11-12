@@ -774,6 +774,7 @@ define([
     };
 
     FaceHandler.prototype.onRead = function (diy, ois) {
+        diy.faceStyle = diyLibrary.FaceStyle.TWO_FACES;
         FaceUtils.clearBleedMargin(diy);
         this.upgrade(diy);
         // an older save lacks the settings the faces added since

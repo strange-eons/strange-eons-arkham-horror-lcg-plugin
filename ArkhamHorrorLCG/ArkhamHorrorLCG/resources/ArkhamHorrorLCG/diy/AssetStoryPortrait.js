@@ -40,6 +40,10 @@ define([
             upgrade: function (diy) {
                 // legacy story assets were Neutral or Weakness
                 LegacyStoryAsset.upgrade(diy.settings, '');
+                if (diy.version < 16) {
+                    diy.settings.reset('BackTypeundefined');
+                    diy.settings.reset('BackTypeBack');
+                }
             },
         })
     );
