@@ -74,6 +74,7 @@ define([
         this.generalPanel = null;
         this.generalTab = null;
         this.sideInterfaces = [null, null];
+        this.artTab = null;
         this.collectorTabs = [];
         this.copyright = null;
         this.templatePanel = null;
@@ -238,11 +239,7 @@ define([
     // if a face uses them.
     FaceHandler.prototype.addCollectorInterface = function (diy) {
         var tabPane = this.editor.getTabbedPane();
-        var index =
-            tabPane.indexOfComponent(this.generalTab) +
-            1 +
-            this.sideInterfaces[FACE_FRONT].tabs.length +
-            this.sideInterfaces[FACE_BACK].tabs.length;
+        var index = this.collectorTabIndex();
 
         this.portraitKinds.forEach(function (kind, i) {
             let faces = [FACE_FRONT, FACE_BACK].filter(function (faceIndex) {
@@ -344,7 +341,8 @@ define([
             tabPane.indexOfComponent(this.generalTab) +
             1 +
             this.sideInterfaces[FACE_FRONT].tabs.length +
-            this.sideInterfaces[FACE_BACK].tabs.length
+            this.sideInterfaces[FACE_BACK].tabs.length +
+            (this.artTab == null ? 0 : 1)
         );
     };
 
@@ -434,6 +432,7 @@ define([
         for (let faceIndex = 0; faceIndex < this.faces.length; faceIndex++) {
             this.addFaceInterface(diy, faceIndex);
         }
+        this.addArtInterface(diy);
         this.addCollectorInterface(diy);
 
         this.bindings.bind();
@@ -463,8 +462,6 @@ define([
             this.bindings,
             faceIndex
         );
-        if (this.art[faceIndex].length > 0)
-            faceUi.tabs.push(this.createArtTab(diy, faceIndex));
         var side = { general: [], tabs: [] };
         var sideName = strings.string(
             faceIndex === FACE_FRONT ? 'AHLCG-Front' : 'AHLCG-Back'
@@ -544,12 +541,19 @@ define([
         );
     };
 
-    FaceHandler.prototype.createArtTab = function (diy, faceIndex) {
+    FaceHandler.prototype.createArtPanel = function (diy, faceIndex, both) {
         var face = this.faces[faceIndex];
         var first = faceIndex === FACE_FRONT ? 0 : this.art[FACE_FRONT].length;
         var panel = new ui.Grid();
+        var controls = [];
+        var side = both
+            ? ': ' +
+              strings.string(
+                  faceIndex === FACE_FRONT ? 'AHLCG-Front' : 'AHLCG-Back'
+              )
+            : '';
         var options = new ui.Grid();
-        options.setTitle(strings.string('AHLCG-Options'));
+        options.setTitle(strings.string('AHLCG-Options') + side);
 
         if (faceIndex === FACE_BACK && this.canShareArt()) {
             let share = new ui.checkBox(
@@ -558,11 +562,16 @@ define([
                 null
             );
             this.bindings.add('PortraitShare', share, [FACE_FRONT, FACE_BACK]);
-            face.boundControls.push(share);
+            controls.push(share);
             options.place(share, 'wrap, span 2');
         }
         var artistField = new ui.textField('', 30);
-        face.bind(this.bindings, faceIndex, 'Artist', artistField);
+        this.bindings.add(
+            'Artist' + face.suffix(faceIndex),
+            artistField,
+            faceIndex === FACE_FRONT ? [FACE_FRONT, FACE_BACK] : [FACE_BACK]
+        );
+        controls.push(artistField);
         options.place(
             strings.string('AHLCG-Artist'),
             'align right',
@@ -574,7 +583,7 @@ define([
             let imagePanel = new ui.portraitPanel(
                 diy,
                 first + j,
-                strings.string('AHLCG-Portrait')
+                strings.string('AHLCG-Portrait') + side
             );
             panel.place(imagePanel, 'wrap, pushx, growx');
             options.place(
@@ -595,7 +604,44 @@ define([
         });
         panel.place(options, 'wrap, pushx, growx');
 
-        return { panel: panel, title: strings.string('AHLCG-Portraits') };
+        return { panel: panel, controls: controls };
+    };
+
+    // Both sides' art and options share one tab after the sides' text tabs.
+    FaceHandler.prototype.addArtInterface = function (diy) {
+        var sides = [FACE_FRONT, FACE_BACK].filter(function (faceIndex) {
+            return this.art[faceIndex].length > 0;
+        }, this);
+        if (sides.length === 0) return;
+        var panel = new ui.Grid();
+        var controls = [];
+        sides.forEach(function (faceIndex) {
+            let art = this.createArtPanel(diy, faceIndex, sides.length > 1);
+            panel.place(art.panel, GeneralHint);
+            controls = controls.concat(art.controls);
+        }, this);
+        panel.editorTabScrolling = true;
+        var index = this.collectorTabIndex();
+        panel.addToEditor(
+            this.editor,
+            strings.string('AHLCG-Portraits'),
+            null,
+            null,
+            index
+        );
+        this.artTab = {
+            component: this.editor.getTabbedPane().getComponentAt(index),
+            controls: controls,
+        };
+    };
+
+    FaceHandler.prototype.removeArtInterface = function () {
+        if (this.artTab == null) return;
+        this.artTab.controls.forEach(function (control) {
+            this.bindings.remove(control);
+        }, this);
+        this.editor.getTabbedPane().remove(this.artTab.component);
+        this.artTab = null;
     };
 
     FaceHandler.prototype.removeFaceInterface = function (diy, faceIndex) {
@@ -617,9 +663,11 @@ define([
     FaceHandler.prototype.changeFace = function (diy, faceIndex, change) {
         this.bindings.flush();
         this.removeCollectorInterface();
+        this.removeArtInterface();
         this.removeFaceInterface(diy, faceIndex);
         change();
         this.addFaceInterface(diy, faceIndex);
+        this.addArtInterface(diy);
         this.addCollectorInterface(diy);
         this.editor.setGameComponent(diy);
         diy.markChanged(faceIndex);
