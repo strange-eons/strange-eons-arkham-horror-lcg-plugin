@@ -33,6 +33,11 @@ define([
         'Flavor',
     ];
 
+    // the faded art is painted through a stencil, without mirrored edges
+    InvestigatorFace.prototype.mirrorsArtEdges = function (name) {
+        return name !== 'TransparentPortrait';
+    };
+
     function isParallel(className) {
         return className.indexOf('Parallel') >= 0;
     }

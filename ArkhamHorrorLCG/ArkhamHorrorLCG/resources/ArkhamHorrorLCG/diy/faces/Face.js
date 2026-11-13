@@ -52,6 +52,12 @@ define([
         return Suffixes[faceIndex];
     };
 
+    // whether the named art is painted by PortraitArt.paint, which can
+    // mirror its edges into the bleed (see faces/PortraitArt.js)
+    Face.prototype.mirrorsArtEdges = function (name) {
+        return true;
+    };
+
     // <template>-<name> on the front, <template>-Back<name> on the back
     Face.prototype.portraitKey = function (faceIndex, name) {
         return this.template + '-' + this.suffix(faceIndex) + name;

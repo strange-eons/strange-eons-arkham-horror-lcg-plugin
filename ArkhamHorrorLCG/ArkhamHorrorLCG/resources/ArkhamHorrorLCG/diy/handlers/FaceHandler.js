@@ -141,12 +141,18 @@ define([
     };
 
     // Matches the art portraits to what the faces draw. Portraits still in
-    // use are kept.
+    // use are kept. Art with mirrored edges gets <key>-MirrorEdges if it
+    // lacks one.
     FaceHandler.prototype.updateArt = function (diy) {
         this.art = this.faces.map(function (face, faceIndex) {
             var current = this.art[faceIndex];
             return face.portraits.map(function (name) {
                 let key = face.portraitKey(faceIndex, name);
+                if (
+                    face.mirrorsArtEdges(name) &&
+                    diy.settings.get(key + '-MirrorEdges') == null
+                )
+                    diy.settings.set(key + '-MirrorEdges', 'Default');
                 let kept = current.filter(function (portrait) {
                     return String(portrait.getBaseKey()) === key;
                 });
@@ -541,6 +547,33 @@ define([
         );
     };
 
+    // Default, Enable and Disable buttons bound to the portrait's
+    // <key>-MirrorEdges; the back can show the front's art
+    FaceHandler.prototype.createMirrorEdgesControl = function (
+        portrait,
+        faceIndex
+    ) {
+        var values = ['Default', 'Enable', 'Disable'];
+        var buttons = values.map(function (value) {
+            return new ui.radioButton(
+                strings.string('AHLCG-MirrorEdges-' + value),
+                false,
+                null
+            );
+        });
+        var group = new ui.buttonGroup(buttons, values);
+        this.bindings.add(
+            portrait.getBaseKey() + '-MirrorEdges',
+            group,
+            faceIndex === FACE_FRONT ? [FACE_FRONT, FACE_BACK] : [FACE_BACK]
+        );
+        var panel = new ui.Grid('insets 0');
+        buttons.forEach(function (button) {
+            panel.place(button, '');
+        });
+        return { panel: panel, group: group };
+    };
+
     FaceHandler.prototype.createArtPanel = function (diy, faceIndex, both) {
         var face = this.faces[faceIndex];
         var first = faceIndex === FACE_FRONT ? 0 : this.art[FACE_FRONT].length;
@@ -601,7 +634,17 @@ define([
                 ),
                 'align right'
             );
-        });
+            if (face.mirrorsArtEdges(face.portraits[j])) {
+                let edges = this.createMirrorEdgesControl(portrait, faceIndex);
+                controls.push(edges.group);
+                options.place(
+                    strings.string('AHLCG-MirrorEdges'),
+                    'newline, align right',
+                    edges.panel,
+                    'span'
+                );
+            }
+        }, this);
         panel.place(options, 'wrap, pushx, growx');
 
         return { panel: panel, controls: controls };

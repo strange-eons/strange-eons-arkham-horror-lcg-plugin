@@ -1,6 +1,6 @@
-// Paints card art portraits. With the Mirror edges portrait bleed
-// preference, image edges that stop just short of the clip region are
-// extended to it by mirroring the image across them.
+// Paints card art portraits. With mirrored edges, image edges that stop just
+// short of the clip region are extended to it by mirroring the image across
+// them.
 //
 // Module: returns PortraitArt.
 define(['faces/FaceUtils', 'se/common', 'se/imageutils', 'se/java'], function (
@@ -75,14 +75,26 @@ define(['faces/FaceUtils', 'se/common', 'se/imageutils', 'se/java'], function (
         return result;
     }
 
+    // The portrait's <key>-MirrorEdges: Enable, Disable, or Default for the
+    // Mirror edges portrait bleed preference.
+    function mirrorsEdges(diy, portrait) {
+        var mode = String(
+            diy.settings.get(portrait.getBaseKey() + '-MirrorEdges', 'Default')
+        );
+        if (mode === 'Enable') return true;
+        if (mode === 'Disable') return false;
+        return (
+            String(
+                common.Settings.getUser().get('AHLCG-PortraitBleed', 'None')
+            ) === 'MirrorEdges'
+        );
+    }
+
     // g is translated to the trim edge, as the clip region is
     function paint(g, diy, sheet, portrait) {
         var image = portrait.getImage();
         var bleed = FaceUtils.bleedPixels(sheet);
-        var mirror =
-            String(
-                common.Settings.getUser().get('AHLCG-PortraitBleed', 'None')
-            ) === 'MirrorEdges';
+        var mirror = mirrorsEdges(diy, portrait);
 
         if (!mirror || bleed === 0 || image == null || portrait.getRotation()) {
             portrait.paint(g, sheet.getRenderTarget());
