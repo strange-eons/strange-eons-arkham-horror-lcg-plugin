@@ -4,7 +4,7 @@ import org.strangeeons.gradle.rendertest.RunScript
 import org.strangeeons.gradle.rendertest.StrangeEonsTask
 
 plugins {
-    id("org.strangeeons.render-test") version "2.0.0"
+    id("org.strangeeons.render-test") version "2.1.0"
     id("net.researchgate.release") version "3.2.0"
     id("org.strangeeons.plugin") version "1.1.1" apply false
 }
@@ -64,10 +64,14 @@ strangeEonsRenderTest {
     resolution = 300
     // more processes add little beyond four
     forks = 4
+    // renders keep the templates' bleed, where art and mirrored edges reach
+    renderBleed = true
 
     // Flexible card fixtures have one face on both sides. A back is checked
     // against its front's master with the collector line's a/b suffix, and the
     // icon it moves, masked; filled and key backs have masters of their own.
+    // Masks are measured from the trim edge; renders include the 8.64 pt bleed.
+    val bleed = 36
     val flexible = providers.gradleProperty("flexibleDir").map { file(it) }.getOrElse(file("src/renderTest/flexible"))
     fun RenderSet.flexible(masterDir: String) {
         components = flexible
@@ -75,21 +79,22 @@ strangeEonsRenderTest {
         sharedMasters {
             renderSuffix = "-1.png"
             masterSuffix = "-0.png"
+            fun trimMask(glob: String, x: Int, y: Int, w: Int, h: Int) = mask(glob, x + bleed, y + bleed, w, h)
             excludes.addAll("**/filled-1.png", "components/key/*")
-            for (variant in listOf("reversed", "reversedReturnTo")) mask("components/act/$variant-1.png", 988, 718, 45, 22)
+            for (variant in listOf("reversed", "reversedReturnTo")) trimMask("components/act/$variant-1.png", 988, 718, 45, 22)
             for (variant in listOf("reversed", "reversedReturnTo", "reversedPerInvestigator")) {
-                mask("components/agenda/$variant-1.png", 564, 718, 45, 22)
+                trimMask("components/agenda/$variant-1.png", 564, 718, 45, 22)
             }
             for (face in listOf("enemy", "tokenRules", "treachery", "treacheryLocation", "asset", "skill", "location", "enemyLocation")) {
-                mask("components/$face/*", 670, 1018, 50, 26)
+                trimMask("components/$face/*", 670, 1018, 50, 26)
             }
-            mask("components/story/*", 570, 974, 46, 26)
-            mask("components/event/*", 630, 1012, 90, 34)
-            mask("components/investigator/*", 995, 715, 45, 22)
-            mask("components/act/*", 570, 718, 45, 22)
-            mask("components/agenda/*", 982, 718, 45, 22)
-            mask("components/agendaFrontPortrait/*", 982, 708, 45, 22)
-            mask("components/agendaPortrait/*", 982, 718, 45, 22)
+            trimMask("components/story/*", 570, 974, 46, 26)
+            trimMask("components/event/*", 630, 1012, 90, 34)
+            trimMask("components/investigator/*", 995, 715, 45, 22)
+            trimMask("components/act/*", 570, 718, 45, 22)
+            trimMask("components/agenda/*", 982, 718, 45, 22)
+            trimMask("components/agendaFrontPortrait/*", 982, 708, 45, 22)
+            trimMask("components/agendaPortrait/*", 982, 718, 45, 22)
         }
     }
     renderSets.register("flexible") { flexible("flexible-masters") }
