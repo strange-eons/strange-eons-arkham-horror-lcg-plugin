@@ -101,6 +101,9 @@ define([
         }
 
         extension.ClassMap.add('ArkhamHorrorLCG/ArkhamHorrorLCG.classmap');
+        extension.ConversionMap.add(
+            'ArkhamHorrorLCG/ArkhamHorrorLCG.conversionmap'
+        );
     }
 
     return {

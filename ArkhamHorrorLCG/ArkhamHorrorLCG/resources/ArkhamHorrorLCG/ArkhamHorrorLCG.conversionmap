@@ -1,0 +1,134 @@
+# Edit > Convert To options: each card type with faces converts to a
+# flexible card with the same faces.
+
+diy:ArkhamHorrorLCG/diy/Act.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/ActAssetStory.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/ActEnemy.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/ActLocation.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/ActPortrait.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Agenda.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AgendaAssetStory.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AgendaEnemy.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AgendaFrontPortrait.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AgendaLocation.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AgendaPortrait.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AgendaTreachery.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Asset.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AssetAsset.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AssetStory.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AssetStoryAsset.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AssetStoryEnemy.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/AssetStoryPortrait.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Chaos.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Customizable.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Enemy.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/EnemyEnemy.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/EnemyLocation.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/EnemyPortrait.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Event.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Investigator.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/InvestigatorStory.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Key.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Location.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/LocationLocation.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Scenario.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Skill.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/StoryAsset.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/StoryChaos.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/StoryEnemy.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/StoryLocation.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/StoryStory.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/StoryTreachery.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/Treachery.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/TreacheryLocation.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/TreacheryPortrait.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/TreacheryStory.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/WeaknessEnemy.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js
+
+diy:ArkhamHorrorLCG/diy/WeaknessTreachery.js
+    @AHLCG-Flexible = diy:ArkhamHorrorLCG/diy/Flexible.js

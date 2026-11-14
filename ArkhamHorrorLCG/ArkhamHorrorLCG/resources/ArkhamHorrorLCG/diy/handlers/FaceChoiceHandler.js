@@ -178,6 +178,35 @@ define(['handlers/FaceHandler', 'se/strings', 'se/ui', 'se/java'], function (
         if (this.config.upgradeChoices) this.config.upgradeChoices(diy);
     };
 
+    // the face settings too
+    FaceChoiceHandler.prototype.componentSettingKeys = function () {
+        return FaceHandler.prototype.componentSettingKeys.call(this).concat(
+            this.faceSettings.filter(function (key) {
+                return key != null;
+            })
+        );
+    };
+
+    // A converted card's settings choose its faces. Portraits are matched to
+    // the source's by key, as their order can differ.
+    FaceChoiceHandler.prototype.onConvertTo = function (diy, session) {
+        this.component = diy;
+        this.applyFaceSettings(diy);
+
+        var source = session.getSource();
+        var sourceIndex = {};
+        for (let i = 0; i < source.getPortraitCount(); i++) {
+            let portrait = source.getPortrait(i);
+            if (typeof portrait.getBaseKey === 'function')
+                sourceIndex[String(portrait.getBaseKey())] = i;
+        }
+        this.allPortraits().forEach(function (portrait, j) {
+            var i = sourceIndex[String(portrait.getBaseKey())];
+            if (i !== undefined) session.copyPortrait(i, j, true);
+        });
+        session.disableAutomaticCopyPortraits();
+    };
+
     // the entry points below first apply face settings changed outside the
     // editor
 

@@ -32,6 +32,7 @@ define([
     'se/ui',
     'ui/Bindings',
     'se/java',
+    'require',
 ], function (
     CardVersion,
     Collector,
@@ -42,7 +43,8 @@ define([
     strings,
     ui,
     Bindings,
-    Java
+    Java,
+    require
 ) {
     const PropertyChangeListener = Java.type(
         'java.beans.PropertyChangeListener'
@@ -53,6 +55,7 @@ define([
     const FACE_FRONT = 0;
     const FACE_BACK = 1;
     const GeneralHint = 'wrap, pushx, growx';
+    const FlexibleScript = 'ArkhamHorrorLCG/diy/Flexible.js';
 
     function FaceHandler(config, front, back) {
         this.version = CardVersion;
@@ -892,6 +895,42 @@ define([
         this.allPortraits().forEach(function (portrait) {
             oos.writeObject(portrait);
         });
+    };
+
+    // settings of the component that a converted card doesn't keep: those
+    // the template keys hold
+    FaceHandler.prototype.componentSettingKeys = function () {
+        var keys = [];
+        this.templateKeys.forEach(function (key) {
+            keys.push(key + '-template', key + '-bleed-margin', key + '-dpi');
+        });
+        return keys;
+    };
+
+    // Converting to a flexible card: the card gets this card's settings and
+    // the ids of its faces, which its handler applies (see
+    // FaceChoiceHandler.onConvertTo). Cancels the conversion when a face has
+    // no id.
+    FaceHandler.prototype.onConvertFrom = function (diy, session) {
+        var target = session.getTarget();
+        if (
+            typeof target.getHandlerScript !== 'function' ||
+            String(target.getHandlerScript()) !== FlexibleScript
+        )
+            return;
+
+        var FlexibleFaces = require('handlers/FlexibleFaces');
+        var ids = this.faces.map(FlexibleFaces.idOf);
+        if (ids.indexOf(null) >= 0) {
+            session.cancel('no flexible face for ' + diy.handlerScript);
+            return;
+        }
+        session.copyAllSettings();
+        this.componentSettingKeys().forEach(function (key) {
+            target.settings.reset(key);
+        });
+        target.settings.set('FrontFace', ids[FACE_FRONT]);
+        target.settings.set('BackFace', ids[FACE_BACK]);
     };
 
     return FaceHandler;

@@ -6,7 +6,7 @@
 // Module: returns exportHandler( scope, handler ), where scope is the handler
 // script's global scope.
 define([], function () {
-    // the DIY Handler and PortraitProvider functions
+    // the DIY Handler, PortraitProvider and conversion functions
     const HandlerMethods = [
         'create',
         'createInterface',
@@ -19,6 +19,8 @@ define([], function () {
         'onWrite',
         'getPortraitCount',
         'getPortrait',
+        'onConvertFrom',
+        'onConvertTo',
     ];
 
     return function exportHandler(scope, handler) {
