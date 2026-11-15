@@ -28,6 +28,14 @@ define([
     const ListItem = Java.type('ca.cgjennings.apps.arkham.diy.ListItem');
     const SkillCount = 5;
 
+    // the circle by the title's region, by class
+    const Circles = {
+        Reward: 'Encounter-overlay',
+        Story: 'Encounter-overlay',
+        StoryWeakness: 'StoryWeakness-overlay',
+        BasicWeakness: 'BasicWeaknessAsset',
+    };
+
     function AssetFace() {
         CardFace.call(this);
     }
@@ -278,28 +286,36 @@ define([
 
         if (!this.replaced && classes.length > 1)
             PlayerCard.paintClassSymbols(this, g, diy, sheet, classes);
-        if (story && !this.replaced) {
-            this.paintImage(
+
+        // a story card's level circle is empty
+        if (story) {
+            if (!this.replaced)
+                this.paintImage(
+                    g,
+                    diy,
+                    sheet,
+                    cardClass === 'Reward'
+                        ? 'overlays/AHLCG-LevelCircle-RW-0.png'
+                        : 'overlays/AHLCG-LevelCircle-' +
+                              PlayerCard.initial(art) +
+                              '-None.png',
+                    'LevelCircle'
+                );
+        } else if (PlayerCard.isWeakness(cardClass)) {
+            PlayerCard.paintWeaknessLevel(this, g, diy, sheet);
+        } else {
+            PlayerCard.paintLevel(
+                this,
                 g,
                 diy,
                 sheet,
-                cardClass === 'Reward'
-                    ? 'overlays/AHLCG-LevelCircle-RW-0.png'
-                    : 'overlays/AHLCG-LevelCircle-' +
-                          PlayerCard.initial(art) +
-                          '-None.png',
-                'LevelCircle'
-            );
-            this.paintImage(
-                g,
-                diy,
-                sheet,
-                cardClass === 'StoryWeakness'
-                    ? 'overlays/AHLCG-BasicWeaknessAsset.png'
-                    : 'overlays/AHLCG-Asset-EncounterSetOverlay.png',
-                'Encounter-overlay'
+                PlayerCard.initial(art),
+                String(diy.settings.get('Level' + suffix, '0')),
+                false
             );
         }
+        PlayerCard.paintCircle(this, g, diy, sheet, cardClass, Circles);
+        PlayerCard.paintWeaknessSubtype(this, g, diy, boxes.subtype, cardClass);
 
         var label = diy.settings.getRegion(
             this.key(diy.settings, 'Label-region')
@@ -321,52 +337,6 @@ define([
                 art,
                 subtitle
             );
-
-        if (story) {
-            if (cardClass === 'StoryWeakness')
-                this.paintSubtype(
-                    g,
-                    diy,
-                    boxes.subtype,
-                    'AHLCG-Label-Weakness'
-                );
-        } else if (PlayerCard.isWeakness(cardClass)) {
-            PlayerCard.paintWeaknessLevel(this, g, diy, sheet);
-            if (cardClass === 'BasicWeakness' && !this.replaced) {
-                this.paintImage(
-                    g,
-                    diy,
-                    sheet,
-                    'overlays/AHLCG-BasicWeaknessAsset.png',
-                    'BasicWeaknessAsset'
-                );
-                this.paintImage(
-                    g,
-                    diy,
-                    sheet,
-                    'icons/AHLCG-BasicWeakness.png',
-                    'BasicWeaknessIcon'
-                );
-            }
-            this.paintSubtype(
-                g,
-                diy,
-                boxes.subtype,
-                cardClass === 'BasicWeakness'
-                    ? 'AHLCG-Label-BasicWeakness'
-                    : 'AHLCG-Label-Weakness'
-            );
-        } else {
-            PlayerCard.paintLevel(
-                this,
-                g,
-                diy,
-                sheet,
-                PlayerCard.initial(art),
-                String(diy.settings.get('Level' + suffix, '0')),
-                false
-            );
-        }
 
         var artInitial = PlayerCard.initial(art);
         PlayerCard.paintCost(

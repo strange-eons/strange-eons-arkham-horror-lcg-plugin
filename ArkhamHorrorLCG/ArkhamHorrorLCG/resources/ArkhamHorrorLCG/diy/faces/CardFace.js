@@ -144,6 +144,7 @@ define([
             if (this.subtypes.indexOf(subtype) < 0) subtype = 'None';
         }
         this.subtype = subtype;
+        this.keyVariant = this.readKeyVariant(diy, faceIndex);
         return subtype;
     };
 
@@ -151,8 +152,21 @@ define([
         return this.subtype !== 'None';
     };
 
-    // a weakness's own settings, where it has them
+    // the side's variant, whose own settings win in key(); read with the
+    // subtype
+    CardFace.prototype.keyVariant = null;
+
+    // a story weakness's own settings, such as its encounter icon's
+    CardFace.prototype.readKeyVariant = function (diy, faceIndex) {
+        return this.subtype === 'StoryWeakness' ? this.subtype : null;
+    };
+
+    // a variant's or weakness's own settings, where it has them
     CardFace.prototype.key = function (settings, name) {
+        if (this.keyVariant != null) {
+            let key = this.template + '-' + this.keyVariant + '-' + name;
+            if (settings.get(key) != null) return key;
+        }
         if (this.isWeakness()) {
             let key = this.template + '-Weakness-' + name;
             if (settings.get(key) != null) return key;
@@ -468,7 +482,8 @@ define([
     };
 
     // a plug-in image, such as overlays/AHLCG-BasicWeakness.png, in the
-    // face's <region>-region, or in area
+    // face's <region>-region, or in area; a <region>-clip-region, where set,
+    // clips it
     CardFace.prototype.paintImage = function (
         g,
         diy,
@@ -477,6 +492,14 @@ define([
         region,
         area
     ) {
+        var clip =
+            region == null
+                ? null
+                : diy.settings.getRegion2D(
+                      this.key(diy.settings, region + '-clip-region')
+                  );
+        var oldClip = g.getClip();
+        if (clip != null) g.clip(clip);
         sheet.paintImage(
             g,
             imageutils.ImageUtils.get('ArkhamHorrorLCG/' + image),
@@ -485,6 +508,7 @@ define([
                     this.key(diy.settings, region + '-region')
                 )
         );
+        if (clip != null) g.setClip(oldClip);
     };
 
     CardFace.prototype.paintCollector = function (

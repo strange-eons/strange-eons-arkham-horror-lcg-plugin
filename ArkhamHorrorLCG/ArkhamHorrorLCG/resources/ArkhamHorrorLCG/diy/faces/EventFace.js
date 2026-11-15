@@ -12,6 +12,12 @@ define([
     'se/ui',
 ], function (CardFace, FaceUtils, PlayerCard, strings, ui) {
     const SkillCount = 5;
+    // the circle by the title's region, by class
+    const Circles = {
+        Story: 'Encounter-overlay',
+        StoryWeakness: 'StoryWeakness-overlay',
+        BasicWeakness: 'BasicWeaknessEvent',
+    };
     // nudges of each pair of dual class symbols
     const SymbolOffsets = {
         GK: [0, 0],
@@ -170,6 +176,9 @@ define([
         }
     };
 
+    // a story weakness's encounter icon sits in the weakness circle
+    EventFace.prototype.readKeyVariant = PlayerCard.readKeyVariant;
+
     EventFace.prototype.paintContent = function (
         g,
         diy,
@@ -214,33 +223,8 @@ define([
             lift = 2;
         this.paintName(g, diy, sheet, boxes.name, lift);
 
-        if (weakness) {
-            PlayerCard.paintWeaknessLevel(this, g, diy, sheet);
-            this.paintSubtype(
-                g,
-                diy,
-                boxes.subtype,
-                cardClass === 'BasicWeakness'
-                    ? 'AHLCG-Label-BasicWeakness'
-                    : 'AHLCG-Label-Weakness'
-            );
-            if (cardClass === 'BasicWeakness' && !this.replaced) {
-                this.paintImage(
-                    g,
-                    diy,
-                    sheet,
-                    'overlays/AHLCG-BasicWeaknessEvent.png',
-                    'BasicWeaknessEvent'
-                );
-                this.paintImage(
-                    g,
-                    diy,
-                    sheet,
-                    'icons/AHLCG-BasicWeakness.png',
-                    'BasicWeaknessIcon'
-                );
-            }
-        } else {
+        if (weakness) PlayerCard.paintWeaknessLevel(this, g, diy, sheet);
+        else
             PlayerCard.paintLevel(
                 this,
                 g,
@@ -250,7 +234,8 @@ define([
                 String(diy.settings.get('Level' + suffix, '0')),
                 false
             );
-        }
+        PlayerCard.paintCircle(this, g, diy, sheet, cardClass, Circles);
+        PlayerCard.paintWeaknessSubtype(this, g, diy, boxes.subtype, cardClass);
 
         PlayerCard.paintCost(
             this,
@@ -279,22 +264,6 @@ define([
         );
 
         var story = cardClass === 'Story' || cardClass === 'StoryWeakness';
-        if (cardClass === 'Story')
-            this.paintImage(
-                g,
-                diy,
-                sheet,
-                'overlays/AHLCG-Asset-EncounterSetOverlay.png',
-                'Encounter-overlay'
-            );
-        else if (cardClass === 'StoryWeakness' && !this.replaced)
-            this.paintImage(
-                g,
-                diy,
-                sheet,
-                'overlays/AHLCG-BasicWeaknessEvent.png',
-                'BasicWeaknessEvent'
-            );
         this.paintCollector(g, diy, sheet, boxes, collector, story, story);
     };
 

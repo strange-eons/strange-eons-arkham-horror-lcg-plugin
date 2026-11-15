@@ -56,8 +56,8 @@ AHLCG-EnemyFace-Copyright-alignment = center, middle
 AHLCG-EnemyFace-CollectionIcon-region = 320,510,13,13
 AHLCG-EnemyFace-CollectionNumber-region = 318,512,37,10
 AHLCG-EnemyFace-CollectionNumber-style = FAMILY: {Eons.namedObjects.AHLCGObject.collectionFamily}; SIZE: {Eons.namedObjects.AHLCGObject.collectionSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.collectionWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.collectionWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.collectionTracking}; FOREGROUND: #FFFFFF
-AHLCG-EnemyFace-EncounterIcon-region = 175,274,26,26
-AHLCG-EnemyFace-ReturnEncounterIcon-region = 169,270,37,33
+AHLCG-EnemyFace-EncounterIcon-region = 171,270,32,32
+AHLCG-EnemyFace-ReturnEncounterIcon-region = 169,268,37,33
 AHLCG-EnemyFace-EncounterNumber-region = 247,512,55,10
 AHLCG-EnemyFace-EncounterNumber-style = FAMILY: {Eons.namedObjects.AHLCGObject.collectionFamily}; SIZE: {Eons.namedObjects.AHLCGObject.collectionSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.collectionWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.collectionWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.collectionTracking}; FOREGROUND: #FFFFFF
 
@@ -67,7 +67,7 @@ AHLCG-EnemyFace-Subtype-alignment = center, middle
 # weakness enemy
 AHLCG-EnemyFace-Weakness-BasicWeaknessEnemy-region = 155,264,64,40
 AHLCG-EnemyFace-Weakness-BasicWeaknessIcon-region = 173,274,28,28
-AHLCG-EnemyFace-Weakness-EncounterIcon-region = 173,274,28,28
+AHLCG-EnemyFace-Weakness-EncounterIcon-region = 171,272,32,32
 AHLCG-EnemyFace-Weakness-Label-region = 158,305,58,15
 AHLCG-EnemyFace-Weakness-PersonalWeaknessEnemy-region = 155,264,64,40
 AHLCG-EnemyFace-Weakness-ReturnEncounterIcon-region = 168,270,37,33

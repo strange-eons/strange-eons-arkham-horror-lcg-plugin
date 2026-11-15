@@ -17,7 +17,6 @@ define([
     TreacheryLocationFace.prototype.template = 'AHLCG-TreacheryLocationFace';
     TreacheryLocationFace.prototype.subtypes = null;
     TreacheryLocationFace.prototype.hasUnique = false;
-    TreacheryLocationFace.prototype.fillReturnEncounterIcon = false;
 
     TreacheryLocationFace.prototype.defaultValues = function (diy, faceIndex) {
         return {

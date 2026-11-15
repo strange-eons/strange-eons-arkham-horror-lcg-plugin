@@ -186,6 +186,53 @@ define([
         );
     }
 
+    // The circle by the title: a story card's encounter set circle, or the
+    // weakness circle of a story or basic weakness, a basic weakness's with
+    // its icon. regions maps each class with a circle to the face's
+    // <region>-region; a replacement template has its own.
+    function paintCircle(face, g, diy, sheet, className, regions) {
+        var region = regions[className];
+        if (face.replaced || region == null) return;
+        face.paintImage(
+            g,
+            diy,
+            sheet,
+            isWeakness(className)
+                ? 'overlays/AHLCG-BasicWeaknessAsset.png'
+                : 'overlays/AHLCG-Asset-EncounterSetOverlay.png',
+            region
+        );
+        if (className === 'BasicWeakness')
+            face.paintImage(
+                g,
+                diy,
+                sheet,
+                'icons/AHLCG-BasicWeakness.png',
+                'BasicWeaknessIcon'
+            );
+    }
+
+    // a weakness's subtype line
+    // a face's readKeyVariant: a story weakness class's own settings
+    function readKeyVariant(diy, faceIndex) {
+        var className = String(
+            diy.settings.get('CardClass' + this.suffix(faceIndex), '')
+        );
+        return className === 'StoryWeakness' ? className : null;
+    }
+
+    function paintWeaknessSubtype(face, g, diy, box, className) {
+        if (!isWeakness(className)) return;
+        face.paintSubtype(
+            g,
+            diy,
+            box,
+            className === 'BasicWeakness'
+                ? 'AHLCG-Label-BasicWeakness'
+                : 'AHLCG-Label-Weakness'
+        );
+    }
+
     // a dash image tinted by the face's Dash-tint
     function paintDash(face, g, diy, sheet, r, offsetX, offsetY) {
         r.x = r.x + (r.width - 26) / 2 + offsetX;
@@ -363,6 +410,9 @@ define([
         paintClassSymbols: paintClassSymbols,
         paintLevel: paintLevel,
         paintWeaknessLevel: paintWeaknessLevel,
+        paintCircle: paintCircle,
+        paintWeaknessSubtype: paintWeaknessSubtype,
+        readKeyVariant: readKeyVariant,
         paintCost: paintCost,
         paintDash: paintDash,
         paintSkillIcons: paintSkillIcons,

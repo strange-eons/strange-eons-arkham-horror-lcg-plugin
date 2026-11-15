@@ -111,5 +111,7 @@ AHLCG-AssetFace-WS-template = ArkhamHorrorLCG/templates/AHLCG-Asset-WS.jp2
 # a story asset's encounter set
 # fractional values supported, but stick to quarter pixels to stay sharp at 600dpi
 AHLCG-AssetFace-Encounter-overlay-region = 316,1,55,55
+# the weakness circle has less padding; its ring matches the story circle's
+AHLCG-AssetFace-StoryWeakness-overlay-region = 321.25,6,45,45
 AHLCG-AssetFace-EncounterIcon-region = 330,13,27,27
 AHLCG-AssetFace-ReturnEncounterIcon-region = 327.5,10.25,32,32

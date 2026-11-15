@@ -12,11 +12,16 @@ define([
     'se/ui',
 ], function (CardFace, FaceUtils, PlayerCard, strings, ui) {
     const SkillCount = 6;
+    // the circle by the title's region, by class; a story weakness's is in
+    // place of the level
+    const Circles = {
+        Story: 'Encounter-overlay',
+        StoryWeakness: 'StoryWeaknessSkill',
+        BasicWeakness: 'BasicWeaknessSkill',
+    };
 
     function SkillFace() {
         CardFace.call(this);
-        // whether the side being painted is a story weakness
-        this.storyWeakness = false;
     }
 
     SkillFace.prototype = Object.create(CardFace.prototype);
@@ -81,15 +86,7 @@ define([
     };
 
     // a story weakness's encounter icon is where the level would be
-    SkillFace.prototype.key = function (settings, name) {
-        if (
-            this.storyWeakness &&
-            (name === 'EncounterIcon-region' ||
-                name === 'ReturnEncounterIcon-region')
-        )
-            return this.template + '-StoryWeakness-EncounterIcon-region';
-        return CardFace.prototype.key.call(this, settings, name);
-    };
+    SkillFace.prototype.readKeyVariant = PlayerCard.readKeyVariant;
 
     SkillFace.prototype.paintContent = function (
         g,
@@ -102,40 +99,13 @@ define([
         var cardClass = String(diy.settings.get('CardClass' + suffix, ''));
         var art = PlayerCard.artInitial(cardClass);
         var weakness = PlayerCard.isWeakness(cardClass);
-        this.storyWeakness = cardClass === 'StoryWeakness';
+        var storyWeakness = cardClass === 'StoryWeakness';
 
         this.paintLabel(g, diy, boxes.label);
         // the title sits a little higher on weakness art
         this.paintName(g, diy, sheet, boxes.name, art === 'W' ? 1 : 0);
 
-        if (weakness) {
-            if (!this.storyWeakness)
-                PlayerCard.paintWeaknessLevel(this, g, diy, sheet, true);
-            this.paintSubtype(
-                g,
-                diy,
-                boxes.subtype,
-                cardClass === 'BasicWeakness'
-                    ? 'AHLCG-Label-BasicWeakness'
-                    : 'AHLCG-Label-Weakness'
-            );
-            if (cardClass === 'BasicWeakness' && !this.replaced) {
-                this.paintImage(
-                    g,
-                    diy,
-                    sheet,
-                    'overlays/AHLCG-BasicWeaknessSkill.png',
-                    'BasicWeaknessSkill'
-                );
-                this.paintImage(
-                    g,
-                    diy,
-                    sheet,
-                    'icons/AHLCG-BasicWeakness.png',
-                    'BasicWeaknessIcon'
-                );
-            }
-        } else {
+        if (!weakness)
             PlayerCard.paintLevel(
                 this,
                 g,
@@ -145,7 +115,10 @@ define([
                 String(diy.settings.get('Level' + suffix, '0')),
                 true
             );
-        }
+        else if (!storyWeakness)
+            PlayerCard.paintWeaknessLevel(this, g, diy, sheet, true);
+        PlayerCard.paintCircle(this, g, diy, sheet, cardClass, Circles);
+        PlayerCard.paintWeaknessSubtype(this, g, diy, boxes.subtype, cardClass);
 
         PlayerCard.paintSkillIcons(
             this,
@@ -165,25 +138,8 @@ define([
             weakness ? 'WeaknessBody' : 'Body'
         );
 
-        var story = cardClass === 'Story' || this.storyWeakness;
-        if (cardClass === 'Story')
-            this.paintImage(
-                g,
-                diy,
-                sheet,
-                'overlays/AHLCG-Asset-EncounterSetOverlay.png',
-                'Encounter-overlay'
-            );
-        else if (this.storyWeakness && !this.replaced)
-            this.paintImage(
-                g,
-                diy,
-                sheet,
-                'overlays/AHLCG-StoryWeaknessSkill.png',
-                'StoryWeaknessSkill'
-            );
+        var story = cardClass === 'Story' || storyWeakness;
         this.paintCollector(g, diy, sheet, boxes, collector, story, story);
-        this.storyWeakness = false;
     };
 
     // only a story card draws its encounter set
