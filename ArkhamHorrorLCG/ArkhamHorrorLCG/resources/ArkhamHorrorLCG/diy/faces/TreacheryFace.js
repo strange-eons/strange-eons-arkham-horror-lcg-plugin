@@ -15,6 +15,7 @@ define(['faces/CardFace', 'se/strings', 'se/ui'], function (
     TreacheryFace.prototype.template = 'AHLCG-TreacheryFace';
     TreacheryFace.prototype.labelKey = 'AHLCG-Label-Treachery';
     TreacheryFace.prototype.fillReturnEncounterIcon = true;
+    TreacheryFace.prototype.anchorsVictory = true;
     TreacheryFace.prototype.subtypes = [
         'None',
         'BasicWeakness',
