@@ -1,8 +1,9 @@
 // The preferences' default values: the encounter set and collection new cards
-// start with, offered from the basic and checked sets, and portrait bleed.
+// start with, offered from the basic and checked sets, portrait bleed, and
+// whether victory text sits at the bottom of the game text.
 //
-// Settings: AHLCG-DefaultEncounterSet, AHLCG-DefaultCollection and
-// AHLCG-PortraitBleed.
+// Settings: AHLCG-DefaultEncounterSet, AHLCG-DefaultCollection,
+// AHLCG-PortraitBleed and AHLCG-AnchorVictory (no unless yes).
 //
 // Module: returns { create, layout, refresh, load, select, store }.
 define(['prefs/SetTables', 'se/java', 'se/strings', 'se/ui'], function (
@@ -12,6 +13,7 @@ define(['prefs/SetTables', 'se/java', 'se/strings', 'se/ui'], function (
     ui
 ) {
     const ListItem = Java.type('ca.cgjennings.apps.arkham.diy.ListItem');
+    const CheckBox = Java.type('javax.swing.JCheckBox');
 
     function basicItems(list) {
         return list.map(function (value) {
@@ -37,7 +39,13 @@ define(['prefs/SetTables', 'se/java', 'se/strings', 'se/ui'], function (
             ),
         ]);
         bleed.setPreferredSize(size);
-        return { encounter: encounter, collection: collection, bleed: bleed };
+        var anchor = new CheckBox(strings.string('AHLCG-Pref-AnchorVictory'));
+        return {
+            encounter: encounter,
+            collection: collection,
+            bleed: bleed,
+            anchor: anchor,
+        };
     }
 
     function layout(pc, defaults) {
@@ -51,6 +59,7 @@ define(['prefs/SetTables', 'se/java', 'se/strings', 'se/ui'], function (
             pc.join();
             pc.addUnmanagedControl(pair[1]);
         });
+        pc.addUnmanagedControl(defaults.anchor);
     }
 
     // selects the item whose value is given, or Strange Eons
@@ -78,6 +87,9 @@ define(['prefs/SetTables', 'se/java', 'se/strings', 'se/ui'], function (
     function load(defaults, settings) {
         var bleed = String(settings.get('AHLCG-PortraitBleed', 'None'));
         defaults.bleed.setSelectedIndex(bleed === 'MirrorEdges' ? 1 : 0);
+        defaults.anchor.setSelected(
+            String(settings.get('AHLCG-AnchorVictory', 'no')) === 'yes'
+        );
     }
 
     function store(defaults, settings) {
@@ -88,6 +100,10 @@ define(['prefs/SetTables', 'se/java', 'se/strings', 'se/ui'], function (
         ].forEach(function (pair) {
             settings.set(pair[0], String(pair[1].getSelectedItem()));
         });
+        settings.set(
+            'AHLCG-AnchorVictory',
+            defaults.anchor.isSelected() ? 'yes' : 'no'
+        );
     }
 
     return {
