@@ -13,6 +13,15 @@ define([
 ], function (FaceUtils, common, markup, strings, ui, Java) {
     const AlphaComposite = Java.type('java.awt.AlphaComposite');
     const Suffixes = ['', 'Back'];
+    // a back setting's value that shows the front's
+    const CopyFront = 'Copy front';
+    // the collector line's Show<name>Front and Show<name>Back, for a face that
+    // draws it
+    const SideFlags = [
+        { name: 'ShowCollectionNumber', uses: 'usesCollection' },
+        { name: 'ShowEncounterNumber', uses: 'usesEncounter' },
+        { name: 'ShowCopyright', uses: 'usesCopyright' },
+    ];
 
     function Face() {
         // what the face's interface added to the bindings
@@ -65,6 +74,137 @@ define([
 
     // with keep, only sets keys the component lacks
     Face.prototype.setDefaults = function (diy, faceIndex, keep) {};
+
+    // keys the face keeps on a side that setDefaults leaves out, such as a
+    // variable number of entries
+    Face.prototype.extraSettings = function (diy, faceIndex) {
+        return [];
+    };
+
+    // The settings the face keeps for itself, as [ front key, back key ], for
+    // moving it to the other side: those setDefaults and extraSettings name,
+    // the art's, and the side's collector line and template replacement. The
+    // back's title, which the front has as the component name, is left out.
+    Face.prototype.settingPairs = function (diy) {
+        var front = this.sideSettings(diy, 0);
+        var back = this.sideSettings(diy, 1);
+        var pairs = [];
+        back.forEach(function (key) {
+            if (front.indexOf(key) >= 0) return;
+            var frontKey = frontKeyOf(key, front, back);
+            if (frontKey != null) pairs.push([frontKey, key]);
+        });
+        this.portraits.forEach(function (name) {
+            pairs.push([
+                this.portraitKey(0, name) + '-MirrorEdges',
+                this.portraitKey(1, name) + '-MirrorEdges',
+            ]);
+        }, this);
+        if (this.usesTemplateReplacement)
+            pairs.push(['TemplateReplacement', 'TemplateReplacementBack']);
+        SideFlags.forEach(function (flag) {
+            if (this[flag.uses])
+                pairs.push([flag.name + 'Front', flag.name + 'Back']);
+        }, this);
+        return pairs;
+    };
+
+    // The settings both sides read alike, which belong to the card, except
+    // the collector line (see collectorSettings).
+    Face.prototype.sharedSettings = function (diy) {
+        var back = this.sideSettings(diy, 1);
+        return this.sideSettings(diy, 0).filter(function (key) {
+            return back.indexOf(key) >= 0;
+        });
+    };
+
+    // The values a back shows from the front, by the back's keys: its title
+    // where it shows another than its own, and for each setting it keeps
+    // that says 'Copy front', the value that shows what it copied (see
+    // copiedValue). Written to the back, they keep it the same without the
+    // front.
+    Face.prototype.inheritedSettings = function (diy, faceIndex) {
+        var values = {};
+        if (faceIndex === 0) return values;
+        var title = this.getTitle(diy, faceIndex);
+        if (title !== Face.prototype.getTitle.call(this, diy, faceIndex))
+            values['Title' + this.suffix(faceIndex)] = title;
+        this.settingPairs(diy).forEach(function (pair) {
+            if (String(diy.settings.get(pair[faceIndex], '')) !== CopyFront)
+                return;
+            values[pair[faceIndex]] = this.copiedValue(
+                pair[faceIndex],
+                String(diy.settings.get(pair[0], 'None'))
+            );
+        }, this);
+        return values;
+    };
+
+    // the value of a back's key that shows the front's value it copies; a
+    // front that says 'Copy front' has nothing to copy
+    Face.prototype.copiedValue = function (key, front) {
+        return front === CopyFront ? 'None' : front;
+    };
+
+    // the card's collector line settings the face draws
+    Face.prototype.collectorSettings = function () {
+        var keys = [];
+        if (this.usesCollection)
+            keys.push(
+                'Collection',
+                'CollectionType',
+                'CollectionNumber',
+                'flipSuffix'
+            );
+        if (this.usesEncounter)
+            keys.push(
+                'Encounter',
+                'EncounterType',
+                'EncounterNumber',
+                'EncounterTotal'
+            );
+        if (this.usesCopyright) keys.push('Copyright');
+        if (this.usesTemplateReplacement) keys.push('TemplateReplacementBleed');
+        return keys;
+    };
+
+    // the keys setDefaults and extraSettings name for a side
+    Face.prototype.sideSettings = function (diy, faceIndex) {
+        var keys = [];
+        function add(key) {
+            key = String(key);
+            if (keys.indexOf(key) < 0) keys.push(key);
+        }
+        var recorder = {
+            name: diy.name,
+            settings: {
+                get: function (key, value) {
+                    return value === undefined
+                        ? diy.settings.get(key)
+                        : diy.settings.get(key, value);
+                },
+                getOverride: function () {
+                    return null;
+                },
+                set: add,
+                reset: add,
+            },
+        };
+        this.setDefaults(recorder, faceIndex, false);
+        this.extraSettings(diy, faceIndex).forEach(add);
+        return keys;
+    };
+
+    // the front key a back key adds 'Back' to, or null
+    function frontKeyOf(key, front, back) {
+        for (let i = key.lastIndexOf('Back'); i >= 0; i--) {
+            if (!key.startsWith('Back', i)) continue;
+            let frontKey = key.substring(0, i) + key.substring(i + 4);
+            if (front.indexOf(frontKey) >= 0 && back.indexOf(frontKey) < 0)
+                return frontKey;
+        }
+        return null;
+    }
 
     // removes settings that describe the face's type, when another face
     // replaces it

@@ -357,6 +357,25 @@ define([
         return String(diy.settings.get('Unique' + this.suffix(side))) === '1';
     };
 
+    // and the unique flag and subtitle a back shows from the front
+    CardFace.prototype.inheritedSettings = function (diy, faceIndex) {
+        var values = Face.prototype.inheritedSettings.call(
+            this,
+            diy,
+            faceIndex
+        );
+        if (faceIndex === 0) return values;
+        var suffix = this.suffix(faceIndex);
+        if (this.titleFromFront(diy, faceIndex))
+            values['Unique' + suffix] = this.isUnique(diy, faceIndex)
+                ? '1'
+                : '0';
+        var subtitle = this.getSubtitle(diy, faceIndex);
+        if (subtitle !== String(diy.settings.get('Subtitle' + suffix, '')))
+            values['Subtitle' + suffix] = subtitle;
+        return values;
+    };
+
     CardFace.prototype.getSubtitle = function (diy, faceIndex) {
         var subtitle = String(
             diy.settings.get('Subtitle' + this.suffix(faceIndex), '')

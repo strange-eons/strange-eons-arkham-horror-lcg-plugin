@@ -70,6 +70,14 @@ define([
         );
     };
 
+    // a location icon that copies a front with nothing to copy still shows
+    // its circle
+    LocationBackFace.prototype.copiedValue = function (key, front) {
+        if (key.startsWith('LocationIcon') && front === 'Copy front')
+            return 'Empty';
+        return Face.prototype.copiedValue.call(this, key, front);
+    };
+
     LocationBackFace.prototype.getTitle = function (diy, faceIndex) {
         var title = Face.prototype.getTitle.call(this, diy, faceIndex);
         return title.length > 0 ? title : String(diy.name);

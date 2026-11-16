@@ -49,6 +49,15 @@ define([
         this.setSettings(diy, keep, values);
     };
 
+    // every block either side has, so both sides list them alike
+    TextBlocksFace.prototype.extraSettings = function (diy, faceIndex) {
+        var n = Math.max(
+            TextBlocks.count(diy.settings, ''),
+            TextBlocks.count(diy.settings, 'Back')
+        );
+        return TextBlocks.keys(this.suffix(faceIndex), n);
+    };
+
     // a panel of face options for the top of the text tab, or null
     TextBlocksFace.prototype.createTextOptions = function (
         bindings,

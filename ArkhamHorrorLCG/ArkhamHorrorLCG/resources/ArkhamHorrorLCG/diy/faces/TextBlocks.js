@@ -67,6 +67,17 @@ define([
         return values;
     }
 
+    // the keys of blocks 1 to n
+    function keys(suffix, n) {
+        var list = ['BlockCount' + suffix];
+        for (let i = 1; i <= n; i++) {
+            ['Style', 'Text', 'Spacing', 'Tokens'].forEach(function (name) {
+                list.push(key(name, i, suffix));
+            });
+        }
+        return list;
+    }
+
     // [ { style, text, spacing, tokens } ]; other styles read as the default
     function read(settings, suffix, styles) {
         var blocks = [];
@@ -715,6 +726,8 @@ define([
 
     return {
         Styles: Styles,
+        count: count,
+        keys: keys,
         defaults: defaults,
         read: read,
         write: write,

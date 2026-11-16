@@ -14,12 +14,13 @@
 //             in place of overriding it
 //
 // Module: returns FaceChoiceHandler.
-define(['handlers/FaceHandler', 'se/strings', 'se/ui', 'se/java'], function (
-    FaceHandler,
-    strings,
-    ui,
-    Java
-) {
+define([
+    'handlers/FaceHandler',
+    'se/strings',
+    'se/ui',
+    'se/java',
+    'require',
+], function (FaceHandler, strings, ui, Java, require) {
     const ListItem = Java.type('ca.cgjennings.apps.arkham.diy.ListItem');
     function FaceChoiceHandler(config) {
         this.choices = config.choices;
@@ -188,7 +189,9 @@ define(['handlers/FaceHandler', 'se/strings', 'se/ui', 'se/java'], function (
     };
 
     // A converted card's settings choose its faces. Portraits are matched to
-    // the source's by key, as their order can differ.
+    // the source's by key, as their order can differ. A conversion that
+    // composes faces of other cards then brings them in (see
+    // handlers/FaceComposer).
     FaceChoiceHandler.prototype.onConvertTo = function (diy, session) {
         this.component = diy;
         this.applyFaceSettings(diy);
@@ -205,6 +208,10 @@ define(['handlers/FaceHandler', 'se/strings', 'se/ui', 'se/java'], function (
             if (i !== undefined) session.copyPortrait(i, j, true);
         });
         session.disableAutomaticCopyPortraits();
+
+        var FaceComposer = require('handlers/FaceComposer');
+        if (FaceComposer.isComposing(session))
+            FaceComposer.compose(this, diy, session);
     };
 
     // the entry points below first apply face settings changed outside the
