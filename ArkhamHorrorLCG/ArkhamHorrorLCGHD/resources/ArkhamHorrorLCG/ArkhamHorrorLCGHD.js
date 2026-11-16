@@ -31,7 +31,8 @@ function initialize() {
     let found = false;
     for (let ext of arkham.plugins.BundleInstaller.getInstalledExtensions()) {
         if (ext.getCatalogID().getUUID().toString().equals("0b899f3c-78ae-40b8-bcfc-b06479b1f136")) {
-            if (ext.getPlugin().getPluginVersion() < getVersion()) {
+            // SE reports plug-in versions as floats; 10.2 as a float is less than 10.2
+            if (ext.getPlugin().getPluginVersion() < java.lang.Float.parseFloat(String(getVersion()))) {
                 alert("[Arkham Horror LCG HD] Arkham Horror LCG plugin version must be " + getVersion() + " or later", true);
                 return false;
             }
