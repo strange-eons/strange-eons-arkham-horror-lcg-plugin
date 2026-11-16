@@ -39,6 +39,7 @@ define([
     Java
 ) {
     const Color = Java.type('java.awt.Color');
+    const Rect = Java.type('java.awt.geom.Rectangle2D$Double');
     const ListItem = Java.type('ca.cgjennings.apps.arkham.diy.ListItem');
     const White = Color.WHITE;
     const Black = Color.BLACK;
@@ -70,6 +71,9 @@ define([
     CardFace.prototype.spacedParts = null;
     // the parts drawn in the body, if not all of them
     CardFace.prototype.bodyParts = null;
+    // Victory sits at the bottom of the body, with Flavor centered above it
+    // (or below the other parts, without Victory)
+    CardFace.prototype.anchorsVictory = false;
     CardFace.prototype.parts = [
         'Traits',
         'Keywords',
@@ -433,7 +437,123 @@ define([
             this.partFormats(diy, suffix)
         );
         markup.updateNameTags(box, diy);
+        if (
+            this.anchorsVictory &&
+            this.paintAnchoredBody(g, diy, box, region, suffix)
+        )
+            return;
         box.draw(g, region);
+    };
+
+    // Victory at the bottom of region and Flavor centered between it (or the
+    // bottom) and the parts above, when the text fits unscaled; otherwise draws nothing and
+    // returns false. Each part is measured where it is drawn, since the
+    // page shape can narrow the lines lower down.
+    CardFace.prototype.paintAnchoredBody = function (
+        g,
+        diy,
+        box,
+        region,
+        suffix
+    ) {
+        var settings = diy.settings;
+        var formats = this.partFormats(diy, suffix);
+        var parts = this.bodyParts || this.parts;
+        function partOf(part) {
+            return parts.indexOf(part) >= 0
+                ? FaceUtils.partMarkup(settings, part, suffix, formats)
+                : '';
+        }
+        var victory = partOf('Victory');
+        var flavor = partOf('Flavor');
+        if (victory === '' && flavor === '') return false;
+
+        var full = box.markupText;
+        var bottom = region.y + region.height;
+
+        function restore() {
+            box.markupText = full;
+            box.setTextFitting(markup.FIT_SCALE_TEXT);
+        }
+        function heightAt(text, y) {
+            box.markupText = text;
+            return box.measure(
+                g,
+                new Rect(region.x, y, region.width, Math.max(1, bottom - y))
+            );
+        }
+        // the top of text placed by place( height ), measured there
+        function settle(text, place) {
+            var y = place(heightAt(text, region.y));
+            for (let i = 0; i < 3; i++) {
+                let next = place(heightAt(text, y));
+                if (Math.abs(next - y) < 0.5) break;
+                y = next;
+            }
+            return y;
+        }
+
+        box.setTextFitting(markup.FIT_NONE);
+        if (heightAt(full, region.y) > region.height) {
+            restore();
+            return false;
+        }
+
+        var top = FaceUtils.partsMarkup(
+            settings,
+            parts.filter(function (part) {
+                return part !== 'Flavor' && part !== 'Victory';
+            }),
+            suffix,
+            formats
+        );
+        var topEnd = region.y + heightAt(top, region.y);
+        var victoryTop = bottom;
+        if (victory !== '')
+            victoryTop = settle(victory, function (height) {
+                return bottom - height;
+            });
+
+        var flavorTop = null;
+        if (flavor !== '') {
+            // the space Flavor's spacing keeps above Victory
+            let spacing =
+                victory === ''
+                    ? 0
+                    : heightAt(
+                          FaceUtils.partsMarkup(
+                              settings,
+                              ['Flavor'],
+                              suffix,
+                              formats
+                          ),
+                          topEnd
+                      ) - heightAt(flavor, topEnd);
+            let gapEnd = victoryTop - Math.max(0, spacing);
+            flavorTop = settle(flavor, function (height) {
+                return topEnd + (gapEnd - topEnd - height) / 2;
+            });
+            if (
+                flavorTop < topEnd - 0.5 ||
+                flavorTop + heightAt(flavor, flavorTop) > gapEnd + 0.5
+            ) {
+                restore();
+                return false;
+            }
+        }
+
+        function draw(text, y) {
+            box.markupText = text;
+            box.draw(
+                g,
+                new Rect(region.x, y, region.width, Math.max(1, bottom - y))
+            );
+        }
+        draw(top, region.y);
+        if (flavorTop != null) draw(flavor, flavorTop);
+        if (victory !== '') draw(victory, victoryTop);
+        restore();
+        return true;
     };
 
     // A weakness's overlay, icon and subtype line; the overlay and icon are
