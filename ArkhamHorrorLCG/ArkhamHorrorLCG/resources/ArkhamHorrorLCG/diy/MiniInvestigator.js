@@ -1,119 +1,130 @@
-useLibrary( 'diy' );
-useLibrary( 'ui' );
-useLibrary( 'markup' );
-useLibrary( 'imageutils' );
-useLibrary( 'fontutils' );
+/* global useLibrary, sourcefile, testDIYScript, globalThis */
+useLibrary('amd');
 
-importClass( arkham.component.DefaultPortrait );
-
-const CardTypes = [ 'MiniInvestigator', 'MiniInvestigator' ];
-const BindingSuffixes = [ '', 'Back' ];
-
-const PortraitTypeList = [ 'Portrait-Both' ];
-
-function create( diy ) {
-	diy.frontTemplateKey = getExpandedKey( FACE_FRONT, 'Default', '-template' );	// not used, set card size
-	diy.backTemplateKey = getExpandedKey( FACE_BACK, 'Default', '-template' );
-
-	diy.faceStyle = FaceStyle.TWO_FACES;
-
-	diy.name = '';
-
-	setDefaults();
-	createPortraits( diy, PortraitTypeList );
-
-	diy.setCornerRadius(8);
-	diy.version = CARD_VERSION;
+if (String(sourcefile) === 'Quickscript') {
+    define.config({
+        baseUrl: 'project:ArkhamHorrorLCG/resources/ArkhamHorrorLCG/diy',
+    });
 }
 
-function setDefaults() {
-}
+// A mini investigator card: the portrait in colour on the front and in
+// greyscale on the back.
+define([
+    'handlers/exportHandler',
+    'legacy/LegacyHandler',
+    'se/diy',
+    'se/java',
+    'se/strings',
+    'se/ui',
+], function (exportHandler, LegacyHandler, diyLibrary, java, strings, ui) {
+    const FACE_FRONT = LegacyHandler.FACE_FRONT;
+    const FACE_BACK = LegacyHandler.FACE_BACK;
+    const AffineTransform = java.type('java.awt.geom.AffineTransform');
 
-function createInterface( diy, editor ) {
-	var AHLCGObject = Eons.namedObjects.AHLCGObject;
+    function MiniInvestigatorHandler() {
+        LegacyHandler.call(
+            this,
+            ['MiniInvestigator', 'MiniInvestigator'],
+            ['', 'Back'],
+            ['Portrait-Both']
+        );
+    }
+    MiniInvestigatorHandler.prototype = Object.create(LegacyHandler.prototype);
+    MiniInvestigatorHandler.prototype.constructor = MiniInvestigatorHandler;
 
-	var bindings = new Bindings( editor, diy );
+    MiniInvestigatorHandler.prototype.create = function (diy) {
+        this.attach(diy);
+        diy.frontTemplateKey = this.key(FACE_FRONT, 'Default', '-template');
+        diy.backTemplateKey = this.key(FACE_BACK, 'Default', '-template');
+        diy.faceStyle = diyLibrary.FaceStyle.TWO_FACES;
+        diy.name = '';
 
-	PortraitTab = layoutPortraits( diy, bindings, 'Portrait', null, true, false, false );
-	PortraitTab.addToEditor(editor, @AHLCG-Portraits);
+        this.createPortraits(diy);
 
-	bindings.bind();
-}
+        diy.setCornerRadius(8);
+        diy.version = LegacyHandler.CARD_VERSION;
+    };
 
-function createFrontPainter( diy, sheet ) {
-	Artist_box = markupBox(sheet);
-	Artist_box.defaultStyle = diy.settings.getTextStyle(getExpandedKey(FACE_FRONT, 'Artist-style'), null);
-	Artist_box.alignment = diy.settings.getTextAlignment(getExpandedKey(FACE_FRONT, 'Artist-alignment'));
-}
+    MiniInvestigatorHandler.prototype.createInterface = function (
+        diy,
+        editor
+    ) {
+        var bindings = new ui.Bindings(editor, diy);
+        this.layoutPortraits(
+            diy,
+            bindings,
+            'Portrait',
+            null,
+            true,
+            false,
+            false
+        )[0].addToEditor(editor, strings.string('AHLCG-Portraits'));
+        bindings.bind();
+    };
 
-function createBackPainter( diy, sheet ) {
-}
+    MiniInvestigatorHandler.prototype.createFrontPainter = function (
+        diy,
+        sheet
+    ) {
+        this.boxes.Artist = this.box(diy, sheet, 'Artist');
+    };
 
-function paintFront( g, diy, sheet ) {
-	clearImage( g, sheet );
+    MiniInvestigatorHandler.prototype.createBackPainter = function () {};
 
-	drawTemplate( g, sheet, '' );
+    MiniInvestigatorHandler.prototype.paintFront = function (g, diy, sheet) {
+        this.clearImage(g, sheet);
+        this.drawTemplate(g, sheet);
+        this.paintPortrait(g, diy, sheet, 'Portrait');
+        this.drawArtist(g, diy, sheet, this.boxes.Artist, false);
+    };
 
-	paintPortrait( g, diy, sheet, 'Portrait' );
-	drawArtist( g, diy, sheet, Artist_box, false );
-}
+    // the portrait in greyscale, placed as on the front
+    MiniInvestigatorHandler.prototype.paintBack = function (g, diy, sheet) {
+        this.clearImage(g, sheet);
+        this.drawTemplate(g, sheet);
 
-function paintBack( g, diy, sheet ) {
-	clearImage( g, sheet );
+        var portrait = this.portraits[this.portraitIndex('Portrait')];
+        var image = this.greyscale(portrait.getImage());
+        var scale = portrait.getScale();
+        var region = diy.settings.getRegion(
+            this.key(FACE_FRONT, 'Portrait-portrait-clip-region')
+        );
+        var transform = AffineTransform.getTranslateInstance(
+            region.x +
+                region.width / 2 +
+                portrait.getPanX() -
+                (image.width * scale) / 2,
+            region.y +
+                region.height / 2 +
+                portrait.getPanY() -
+                (image.height * scale) / 2
+        );
+        transform.concatenate(AffineTransform.getScaleInstance(scale, scale));
+        transform.concatenate(
+            AffineTransform.getRotateInstance(
+                (-portrait.getRotation() * Math.PI) / 180,
+                image.width / 2,
+                image.height / 2
+            )
+        );
+        g.drawImage(image, transform, null);
+    };
 
-	drawTemplate( g, sheet, '' );
+    MiniInvestigatorHandler.prototype.onClear = function () {};
 
-	var imageTinted = PortraitList[getPortraitIndex( 'Portrait' )].getImage();
-	var imagePanX = PortraitList[getPortraitIndex( 'Portrait' )].getPanX();
-	var imagePanY = PortraitList[getPortraitIndex( 'Portrait' )].getPanY();
-	var imageRotation = PortraitList[getPortraitIndex( 'Portrait' )].getRotation();
-	var imageScale = PortraitList[getPortraitIndex( 'Portrait' )].getScale();
+    MiniInvestigatorHandler.prototype.onRead = function (diy, ois) {
+        this.attach(diy);
+        this.readPortraits(diy, ois);
+        diy.setCornerRadius(8);
+        diy.version = LegacyHandler.CARD_VERSION;
+    };
 
-	imageTinted = createGreyscaleImage( imageTinted );
+    exportHandler(globalThis, new MiniInvestigatorHandler());
+});
 
-	var region = diy.settings.getRegion( getExpandedKey( FACE_FRONT, 'Portrait-portrait-clip-region') );
-
-	var AT = java.awt.geom.AffineTransform;
-	var transform =	AT.getTranslateInstance(
-		region.x + region.width/2 + imagePanX - ( ( imageTinted.width * imageScale ) / 2 ),
-		region.y + region.height/2 + imagePanY - ( ( imageTinted.height * imageScale ) / 2 )
-	);
-	transform.concatenate( AT.getScaleInstance( imageScale, imageScale ) );
-	transform.concatenate( AT.getRotateInstance( -imageRotation * Math.PI/180, imageTinted.width/2, imageTinted.height/2 ) );
-
-	g.drawImage(imageTinted, transform, null);
-}
-
-function onClear() {
-	setDefaults();
-}
-
-// These can be used to perform special processing during open/save.
-// For example, you can seamlessly upgrade from a previous version
-// of the script.
-function onRead(diy, oos) {
-	readPortraits( diy, oos, PortraitTypeList, true );
-
-	diy.setCornerRadius(8);
-	diy.version = CARD_VERSION;
-}
-
-function onWrite( diy, oos ) {
-	writePortraits( oos, PortraitTypeList );
-}
-
-// This is part of the diy library; calling it from within a
-// script that defines the needed functions for a DIY component
-// will create the DIY from the script and add it as a new editor;
-// however, saving and loading the new component won't work correctly.
-// This means you can test your script directly by running it without
-// having to create a plug-in (except to make any required resources
-// available).
-if( sourcefile == 'Quickscript' ) {
-	useLibrary('project:ArkhamHorrorLCG/resources/ArkhamHorrorLCG/diy/AHLCG-legacyLibrary.js');
-
-	testDIYScript();
-}
-else {
-	useLibrary('res://ArkhamHorrorLCG/diy/AHLCG-legacyLibrary.js');
+// Running this script directly (Quickscript) creates a test editor for the
+// component; saving and loading it won't work correctly.
+if (String(sourcefile) === 'Quickscript') {
+    useLibrary('diy');
+    testDIYScript();
 }
