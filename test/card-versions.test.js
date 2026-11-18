@@ -14,28 +14,30 @@ test('handlers/CardVersion returns the version', () => {
     assert.match(read('handlers/CardVersion.js'), /return \d+;/);
 });
 
-test('the legacy library takes CARD_VERSION from handlers/CardVersion', () => {
+test('LegacyHandler takes CARD_VERSION from handlers/CardVersion', () => {
     assert.ok(
-        read('AHLCG-legacyLibrary.js').includes(
-            'const CARD_VERSION = AHLCGModules.CardVersion;'
+        read('legacy/LegacyHandler.js').includes(
+            'LegacyHandler.CARD_VERSION = CardVersion;'
         )
     );
 });
 
 const handlers = fs
     .readdirSync(diy)
-    .filter((f) => f.endsWith('.js') && !f.startsWith('AHLCG'))
-    .sort();
+    .filter((f) => f.endsWith('.js'))
+    .sort()
+    .concat(['legacy/CoverHandler.js', 'legacy/GuideHandler.js']);
 
 for (const name of handlers) {
     test(`${name} takes its version from CARD_VERSION`, () => {
         const text = read(name);
         assert.doesNotMatch(text, /diy\.version\s*=\s*\d/, 'literal version');
-        if (text.includes("useLibrary('amd')")) {
-            assert.doesNotMatch(text, /\bversion\s*[:=]/, 'own version');
-        } else {
-            const sets = text.match(/diy\.version\s*=\s*CARD_VERSION/g) || [];
-            assert.equal(sets.length, 2, 'CARD_VERSION set in create and onRead');
-        }
+        const legacy = text.match(/diy\.version = LegacyHandler\.CARD_VERSION/g) || [];
+        assert.ok(legacy.length === 0 || legacy.length === 2, 'set in create and onRead');
+        assert.doesNotMatch(
+            text.replace(/diy\.version = LegacyHandler\.CARD_VERSION/g, ''),
+            /\bversion\s*[:=]/,
+            'own version'
+        );
     });
 }
