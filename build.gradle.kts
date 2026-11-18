@@ -135,8 +135,10 @@ tasks.register<RunScript>("generateFixtures") {
 }
 
 tasks.withType<StrangeEonsTask>().configureEach {
+    // a local, so the action holds no reference to the build script
+    val fixtures = fixtureScript.asFile
     doFirst {
-        if (!fixtureScript.asFile.isFile) {
+        if (!fixtures.isFile) {
             throw GradleException("src/renderTest is not checked out. Run: git submodule update --init src/renderTest")
         }
     }
