@@ -307,3 +307,83 @@ test('covers set their tint and portraits, and paint art under the tinted frame'
         assert.equal(old.version, 42);
     }
 });
+
+const guideDefaults = {
+    PageType: 'Empty',
+    Page: '1',
+    RulesLeft: '',
+    RulesRight: '',
+    PositionPortrait1: 'TopLeftSmall',
+    PositionPortrait2: 'BottomLarge',
+    LineSpacingLeft: '100',
+    LineSpacingRight: '100',
+};
+
+test('guides set their page defaults and lay out both columns', () => {
+    const { Cls, calls } = loadSubclass('legacy/GuideHandler.js');
+    const h = new Cls('GuideA4', true);
+    assert.deepEqual([...h.types], ['GuideA4']);
+    assert.deepEqual([...h.portraitTypes], ['Portrait1-Front', 'Portrait2-Front']);
+    const d = component();
+    h.create(d);
+    assert.deepEqual(Object.fromEntries(d.map), guideDefaults);
+    assert.equal(d.faceStyle, 'one');
+    assert.equal(d.version, 42);
+
+    calls.length = 0;
+    h.createInterface(d, 'editor');
+    assert.deepEqual([...calls.find(c => c[0] === 'layoutTitleGuide').at(-1)], ['p1', 'p2']);
+    assert.deepEqual(calls.filter(c => c[0] === 'tab').map(c => c[1]), [
+        'AHLCG-General', 'AHLCG-Portraits', 'AHLCG-Rules: AHLCG-Left', 'AHLCG-Rules: AHLCG-Right',
+    ]);
+    assert.deepEqual(calls.filter(c => c[0] === 'layoutText').map(c => [[...c[2]], c[3]]), [[['Rules'], 'Left'], [['Rules'], 'Right']]);
+    d.map.set('Page', '9');
+    h.onClear(d);
+    assert.equal(d.map.get('Page'), '1');
+});
+
+test('guides paint a title or numbered page with two columns', () => {
+    for (const [pageType, drawn] of [['Title', 'drawName'], ['Empty', 'drawPageNumber']]) {
+        const { Cls, calls } = loadSubclass('legacy/GuideHandler.js');
+        const h = new Cls('Guide75', true);
+        const d = component({ ...guideDefaults, PageType: pageType, RulesLeft: 'L', RulesRight: 'R', LineSpacingRight: '120' });
+        h.get = k => d.settings.get(k);
+        h.key = (face, key) => 'AHLCG-' + key;
+        h.createFrontPainter(d, 'sheet');
+        assert.equal(h.boxes.Body.fit, 'none');
+        assert.deepEqual([h.boxes.Header.style, h.boxes.Header.align], ['ResHeader', 'Header']);
+        assert.deepEqual(calls.filter(c => c[0] === 'setupGuidePortrait').map(c => c.slice(2)), [
+            [0, 'TopLeftSmall', false], [1, 'BottomLarge', false],
+        ]);
+
+        calls.length = 0;
+        h.paintFront('g', d, 'sheet');
+        assert.deepEqual(calls.map(c => c[0]), [
+            'clearImage', 'drawGuideTemplate', ...(pageType === 'Title' ? ['drawName'] : []), 'drawGuidePortraits',
+            ...(pageType === 'Empty' ? ['drawPageNumber'] : []), 'drawGuideBody', 'drawGuideBody',
+        ]);
+        assert.ok(calls.some(c => c[0] === drawn));
+        assert.deepEqual(calls.filter(c => c[0] === 'drawGuideBody').map(c => c.slice(6)), [
+            ['fitted region AHLCG-BodyLeft' + pageType + '-region', 'L', 100],
+            ['fitted region AHLCG-BodyRight' + pageType + '-region', 'R', 120],
+        ]);
+    }
+});
+
+test('guides upgrade early saves only for the sizes that had them', () => {
+    for (const [early, version, expected, spacing] of [
+        [true, 5, 'createPortraits', '100'],
+        [true, 15, 'readPortraits', '100'],
+        [true, 16, 'readPortraits', 'kept'],
+        [false, 5, 'readPortraits', 'kept'],
+    ]) {
+        const { Cls, calls } = loadSubclass('legacy/GuideHandler.js');
+        const h = new Cls('GuideLetter', early);
+        const d = component({ LineSpacingLeft: 'kept', LineSpacingRight: 'kept' }, version);
+        h.onRead(d, 'ois');
+        assert.deepEqual(calls.map(c => c[0]), ['attach', expected], `${early} ${version}`);
+        assert.equal(d.map.get('LineSpacingLeft'), spacing);
+        assert.equal(d.map.get('LineSpacingRight'), spacing);
+        assert.equal(d.version, 42);
+    }
+});
