@@ -59,6 +59,7 @@ export default defineConfig([
     `!${diy}/TreacheryStory.js`,
     `!${diy}/WeaknessEnemy.js`,
     `!${diy}/WeaknessTreachery.js`,
+    `!${diy}/Ultimatum.js`,
     `!${diy}/core/**/*.js`,
     `!${diy}/data/**/*.js`,
     `!${diy}/faces/**/*.js`,
