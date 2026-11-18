@@ -106,13 +106,36 @@ strangeEonsRenderTest {
         userSettings.put("render-as-prototype", "yes")
     }
 
-    // The state of a newly created component for each card handler.
-    textChecks.register("defaults") {
+    // Script checks, each a separate SE process that runs the named parts of
+    // the fixture script and has its own masters folder.
+    fun scriptCheck(name: String, vararg parts: String) = textChecks.register(name) {
         script = fixtureScript
         scriptInputs.from(amdScript, renderTest.dir("amd"))
-        systemProperties.putAll(mapOf("fx.mode" to "defaults", "fx.amdScript" to amdScript.asFile.path))
-        masters = renderTest.dir("defaults")
+        systemProperties.putAll(mapOf(
+            "fx.mode" to "defaults",
+            "fx.amdScript" to amdScript.asFile.path,
+            "fx.checks" to parts.joinToString(","),
+        ))
+        masters = renderTest.dir(name)
         ignoreLineOrder = true
+    }
+    // The state of a newly created component for each card handler, and
+    // editor and plug-in behavior.
+    scriptCheck(
+        "defaults", "handlers", "amd-loader", "text-blocks", "editor-fit", "token-blocks", "collector-tabs",
+        "face-switch", "encounter-tab", "plugin-object", "preferences", "user-icons", "plugin-script",
+    )
+    scriptCheck("repaint", "repaint")
+    scriptCheck("painting", "sides", "mirror-edges", "anchor-victory")
+    scriptCheck("conversion", "conversion")
+    scriptCheck("compose", "compose")
+}
+
+// Slow checks are part of check only with -Pfull; each still runs on its own.
+val fullOnly = setOf("verifyRenders", "verifyFlexibleInkSaverRenders", "verifyConversion", "verifyCompose")
+if (!providers.gradleProperty("full").isPresent) {
+    tasks.named("check") {
+        setDependsOn(dependsOn.filterNot { it is TaskProvider<*> && it.name in fullOnly })
     }
 }
 
