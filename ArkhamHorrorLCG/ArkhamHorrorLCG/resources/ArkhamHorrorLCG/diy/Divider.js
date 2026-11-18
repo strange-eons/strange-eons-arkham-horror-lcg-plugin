@@ -1,126 +1,116 @@
-useLibrary( 'diy' );
-useLibrary( 'ui' );
-useLibrary( 'markup' );
-useLibrary( 'imageutils' );
-useLibrary( 'fontutils' );
+/* global useLibrary, sourcefile, testDIYScript, globalThis */
+useLibrary('amd');
 
-importClass( arkham.component.DefaultPortrait );
-
-const CardTypes = [ 'Divider', 'Divider' ];
-const BindingSuffixes = [ '', 'Back' ];
-
-const PortraitTypeList = [ 'Encounter-Both' ];
-
-function create( diy ) {
-	diy.frontTemplateKey = getExpandedKey( FACE_FRONT, 'Default', '-template' );	// not used, set card size
-	diy.backTemplateKey = getExpandedKey( FACE_BACK, 'Default', '-template' );
-
-	diy.faceStyle = FaceStyle.TWO_FACES;
-
-	diy.name = '';
-
-	setDefaults();
-	createPortraits( diy, PortraitTypeList );
-	setDefaultEncounter( diy );
-
-	diy.version = CARD_VERSION;
+if (String(sourcefile) === 'Quickscript') {
+    define.config({
+        baseUrl: 'project:ArkhamHorrorLCG/resources/ArkhamHorrorLCG/diy',
+    });
 }
 
-function setDefaults() {
-}
+// A divider: the same template, title and encounter icon on both sides.
+define([
+    'handlers/exportHandler',
+    'legacy/LegacyHandler',
+    'se/diy',
+    'se/strings',
+    'se/ui',
+], function (exportHandler, LegacyHandler, diyLibrary, strings, ui) {
+    const FACE_FRONT = LegacyHandler.FACE_FRONT;
+    const FACE_BACK = LegacyHandler.FACE_BACK;
+    const string = strings.string;
 
-function createInterface( diy, editor ) {
-	var AHLCGObject = Eons.namedObjects.AHLCGObject;
-	
-	var bindings = new Bindings( editor, diy );
+    function DividerHandler() {
+        LegacyHandler.call(
+            this,
+            ['Divider', 'Divider'],
+            ['', 'Back'],
+            ['Encounter-Both']
+        );
+    }
+    DividerHandler.prototype = Object.create(LegacyHandler.prototype);
+    DividerHandler.prototype.constructor = DividerHandler;
 
-	var TitlePanel = layoutTitle( diy, bindings, false, [0, 1], FACE_FRONT );
+    DividerHandler.prototype.create = function (diy) {
+        this.attach(diy);
+        diy.frontTemplateKey = this.key(FACE_FRONT, 'Default', '-template');
+        diy.backTemplateKey = this.key(FACE_BACK, 'Default', '-template');
+        diy.faceStyle = diyLibrary.FaceStyle.TWO_FACES;
+        diy.name = '';
 
-	var StatisticsTab = new Grid();
-	StatisticsTab.editorTabScrolling = true;
-	StatisticsTab.place(TitlePanel, 'wrap, pushx, growx' );
-	StatisticsTab.addToEditor( editor , @AHLCG-General );
+        this.createPortraits(diy);
+        this.setDefaultEncounter(diy);
 
-	var EncounterImagePanel = new portraitPanel( diy, getPortraitIndex( 'Encounter' ), @AHLCG-CustomEncounterSet );
-	var EncounterPanel = layoutSimpleEncounter( bindings, EncounterImagePanel, [0, 1], FACE_FRONT );
-	
-	var EncounterTab = new Grid();
-	EncounterTab.editorTabScrolling = true;
-	EncounterTab.place( EncounterPanel, 'wrap, pushx, growx', EncounterImagePanel, 'wrap, pushx, growx' );
-	EncounterTab.addToEditor(editor, @AHLCG-EncounterSet);
+        diy.version = LegacyHandler.CARD_VERSION;
+    };
 
-	bindings.bind();
-}
+    DividerHandler.prototype.createInterface = function (diy, editor) {
+        var bindings = new ui.Bindings(editor, diy);
 
-function createFrontPainter( diy, sheet ) {	
-	Name_box = markupBox(sheet);
-	Name_box.defaultStyle = diy.settings.getTextStyle(getExpandedKey(FACE_FRONT, 'Name-style'), null);
-	Name_box.alignment = diy.settings.getTextAlignment(getExpandedKey(FACE_FRONT, 'Name-alignment'));
-	initBodyTags( diy, Name_box );	
-}
+        var general = new ui.Grid();
+        general.editorTabScrolling = true;
+        general.place(
+            this.layoutTitle(diy, bindings, false, [0, 1], FACE_FRONT),
+            'wrap, pushx, growx'
+        );
+        general.addToEditor(editor, string('AHLCG-General'));
 
-function createBackPainter( diy, sheet ) {
-	BackName_box = markupBox(sheet);
-	BackName_box.defaultStyle = diy.settings.getTextStyle(getExpandedKey(FACE_FRONT, 'Name-style'), null);
-	BackName_box.alignment = diy.settings.getTextAlignment(getExpandedKey(FACE_FRONT, 'Name-alignment'));
-	initBodyTags( diy, BackName_box );	
-}
+        var encounterImage = new ui.portraitPanel(
+            diy,
+            this.portraitIndex('Encounter'),
+            string('AHLCG-CustomEncounterSet')
+        );
+        var encounter = new ui.Grid();
+        encounter.editorTabScrolling = true;
+        encounter.place(
+            this.layoutSimpleEncounter(
+                bindings,
+                encounterImage,
+                [0, 1],
+                FACE_FRONT
+            ),
+            'wrap, pushx, growx',
+            encounterImage,
+            'wrap, pushx, growx'
+        );
+        encounter.addToEditor(editor, string('AHLCG-EncounterSet'));
 
-function paintFront( g, diy, sheet ) {
-	clearImage( g, sheet );
+        bindings.bind();
+    };
 
-	drawTemplate( g, sheet, '' );
+    DividerHandler.prototype.createFrontPainter = function (diy, sheet) {
+        this.boxes.Name = this.box(diy, sheet, 'Name');
+        this.initBodyTags(diy, this.boxes.Name);
+    };
 
-	if ( diy.name != '' ) drawName( g, diy, sheet, Name_box );
+    DividerHandler.prototype.createBackPainter = function () {};
 
-	drawEncounterIcon( g, diy, sheet );
-	
-	drawWatermark( g, diy, sheet );
-}
+    // both sides draw the front's title box
+    DividerHandler.prototype.paintFront = function (g, diy, sheet) {
+        this.clearImage(g, sheet);
+        this.drawTemplate(g, sheet);
+        if (String(diy.name) !== '')
+            this.drawName(g, diy, sheet, this.boxes.Name);
+        this.drawEncounterIcon(g, diy, sheet);
+        this.drawWatermark(g, diy, sheet);
+    };
 
-function paintBack( g, diy, sheet ) {
-	clearImage( g, sheet );
+    DividerHandler.prototype.paintBack = DividerHandler.prototype.paintFront;
 
-	drawTemplate( g, sheet, '' );
+    DividerHandler.prototype.onClear = function () {};
 
-	if ( diy.name != '' ) drawName( g, diy, sheet, Name_box );
+    DividerHandler.prototype.onRead = function (diy, ois) {
+        this.attach(diy);
+        this.readPortraits(diy, ois);
+        this.updateEncounter(diy);
+        diy.version = LegacyHandler.CARD_VERSION;
+    };
 
-	drawEncounterIcon( g, diy, sheet );
-	
-	drawWatermark( g, diy, sheet );
-} 
+    exportHandler(globalThis, new DividerHandler());
+});
 
-function onClear() {
-	setDefaults();
-}
-
-// These can be used to perform special processing during open/save.
-// For example, you can seamlessly upgrade from a previous version
-// of the script.
-function onRead(diy, oos) {
-	readPortraits( diy, oos, PortraitTypeList, true );
-
-	updateEncounter( diy );
-
-	diy.version = CARD_VERSION;
-}
-
-function onWrite( diy, oos ) {
-	writePortraits( oos, PortraitTypeList );
-}
-
-// This is part of the diy library; calling it from within a
-// script that defines the needed functions for a DIY component
-// will create the DIY from the script and add it as a new editor;
-// however, saving and loading the new component won't work correctly.
-// This means you can test your script directly by running it without
-// having to create a plug-in (except to make any required resources
-// available).
-if( sourcefile == 'Quickscript' ) {
-	useLibrary('project:ArkhamHorrorLCG/resources/ArkhamHorrorLCG/diy/AHLCG-legacyLibrary.js');
-
-	testDIYScript();
-}
-else {
-	useLibrary('res://ArkhamHorrorLCG/diy/AHLCG-legacyLibrary.js');
+// Running this script directly (Quickscript) creates a test editor for the
+// component; saving and loading it won't work correctly.
+if (String(sourcefile) === 'Quickscript') {
+    useLibrary('diy');
+    testDIYScript();
 }
