@@ -192,3 +192,118 @@ test('helpers pass the handler card to the legacy modules', () => {
         if (result !== undefined) assert.equal(result, expected[0]);
     }
 });
+
+// a handler class subclassing a recording LegacyHandler
+function loadSubclass(name, extra = {}) {
+    const calls = [];
+    function LegacyHandler(types, suffixes, portraitTypes) {
+        Object.assign(this, { types, suffixes, portraitTypes, portraits: [], boxes: {} });
+    }
+    LegacyHandler.FACE_FRONT = 0;
+    LegacyHandler.CARD_VERSION = 42;
+    const record = method => function (...args) {
+        calls.push([method, ...args]);
+        return method;
+    };
+    for (const method of [
+        'attach', 'key', 'createPortraits', 'readPortraits', 'clearImage', 'drawBackTemplate', 'drawName',
+        'initBodyTags', 'initGuideTags', 'setupGuidePortrait', 'drawGuideTemplate', 'drawGuidePortraits',
+        'drawPageNumber', 'drawGuideBody', 'layoutTint', 'layoutTitle2', 'layoutTitleGuide', 'layoutGuideStats',
+        'layoutText',
+    ])
+        LegacyHandler.prototype[method] = record(method);
+    LegacyHandler.prototype.box = (diy, sheet, style, align) => ({
+        style, align, setTextFitting(f) { this.fit = f; },
+    });
+    LegacyHandler.prototype.guideBodyRegions = (diy, regions) => regions.map(r => 'fitted ' + r);
+    LegacyHandler.prototype.layoutPortraits = (diy, b, name) => [{ addToEditor: (e, t) => calls.push(['tab', t, name]) }];
+    LegacyHandler.prototype.layoutGuidePortraits = () => [{ addToEditor: (e, t) => calls.push(['tab', t]) }, 'p1', 'p2'];
+    function Grid() {
+        this.place = () => {};
+        this.addToEditor = (e, t) => calls.push(['tab', t]);
+        this.setTitle = () => {};
+    }
+    const ui = {
+        Bindings: function () { this.add = () => {}; this.bind = () => calls.push(['bind']); },
+        Grid,
+        spinner: function () {},
+    };
+    const panel = { setTitle: t => calls.push(['title', t]), addToEditor: (e, t) => calls.push(['tab', t]) };
+    LegacyHandler.prototype.layoutTint = () => panel;
+    LegacyHandler.prototype.layoutTitle2 = () => panel;
+    LegacyHandler.prototype.layoutGuideStats = () => panel;
+    const Cls = load(name, {
+        'legacy/LegacyHandler': LegacyHandler,
+        'se/common': { Settings: { tint: v => 'hsb ' + v } },
+        'se/diy': { FaceStyle: { ONE_FACE: 'one' } },
+        'se/imageutils': {
+            ImageUtils: { get: p => 'img ' + p, tint: (img, hsb) => img + ' ' + hsb },
+        },
+        'se/markup': { FIT_NONE: 'none' },
+        'se/strings': { string: k => k },
+        'se/ui': ui,
+        ...extra,
+    });
+    return { Cls, calls };
+}
+
+function component(values = {}, version = 42) {
+    const map = new Map(Object.entries(values));
+    return {
+        map,
+        version,
+        settings: {
+            get: k => (map.has(k) ? map.get(k) : null),
+            set: (k, v) => map.set(k, v),
+            getRegion: k => 'region ' + k,
+        },
+    };
+}
+
+test('covers set their tint and portraits, and paint art under the tinted frame', () => {
+    for (const [type, bottom, portraits] of [
+        ['BoxCover', true, ['Portrait-Front', 'PortraitBottom-Front']],
+        ['PackCover', false, ['Portrait-Front']],
+    ]) {
+        const { Cls, calls } = loadSubclass('legacy/CoverHandler.js');
+        const h = new Cls(type, bottom);
+        assert.deepEqual([...h.types], [type]);
+        assert.deepEqual([...h.portraitTypes], portraits);
+        const d = component();
+        h.create(d);
+        assert.equal(d.faceStyle, 'one');
+        assert.equal(d.name, '');
+        assert.equal(d.version, 42);
+        assert.equal(d.map.get('tint'), '0,1,1');
+        assert.deepEqual(calls.map(c => c[0]), ['attach', 'key', 'createPortraits']);
+
+        calls.length = 0;
+        h.createInterface(d, 'editor');
+        assert.deepEqual(calls.filter(c => c[0] === 'tab').map(c => c[1]), [
+            'Tint', 'AHLCG-General', 'AHLCG-Portraits', ...(bottom ? ['Bottom Portrait'] : []),
+        ]);
+        assert.deepEqual(calls.at(-1), ['bind']);
+
+        calls.length = 0;
+        h.createFrontPainter(d, 'sheet');
+        h.portraits = portraits.map(p => ({ paint: () => calls.push(['portrait', p]) }));
+        const painted = [];
+        h.paintFront('g', d, { getRenderTarget: () => 't', paintImage: (g, img, r) => painted.push([img, r]) });
+        assert.deepEqual(calls.map(c => c[0]), [
+            'initBodyTags', 'clearImage', ...portraits.map(() => 'portrait'), 'drawBackTemplate', 'drawName',
+        ]);
+        assert.deepEqual(painted, [[
+            'img ArkhamHorrorLCG/templates/AHLCG-' + type + 'Tintable.png hsb 0,1,1',
+            'region AHLCG-' + type + '-Tint-region',
+        ]]);
+
+        d.map.set('tint', 'x');
+        h.onClear(d);
+        assert.equal(d.map.get('tint'), '0,1,1');
+        calls.length = 0;
+        const old = component({}, 3);
+        h.onRead(old, 'ois');
+        assert.deepEqual(calls.map(c => c[0]), ['attach', 'readPortraits']);
+        assert.equal(old.version, 42);
+    }
+});

@@ -63,6 +63,8 @@ export default defineConfig([
     `!${diy}/Concealed.js`,
     `!${diy}/Divider.js`,
     `!${diy}/MiniInvestigator.js`,
+    `!${diy}/BoxCover.js`,
+    `!${diy}/PackCover.js`,
     `!${diy}/core/**/*.js`,
     `!${diy}/data/**/*.js`,
     `!${diy}/faces/**/*.js`,
