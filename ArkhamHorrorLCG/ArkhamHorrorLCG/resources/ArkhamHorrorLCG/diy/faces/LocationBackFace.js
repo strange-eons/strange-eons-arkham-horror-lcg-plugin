@@ -38,6 +38,7 @@ define([
     LocationBackFace.prototype.showsCollectionNumber = false;
     LocationBackFace.prototype.connectionChoices = 'comboConnectionsBack';
     LocationBackFace.prototype.noConnection = 'Copy front';
+    LocationBackFace.prototype.iconCircle = 'AHLCG-LocationCircleBack.png';
 
     LocationBackFace.prototype.defaultValues = function (diy, faceIndex) {
         var values = {

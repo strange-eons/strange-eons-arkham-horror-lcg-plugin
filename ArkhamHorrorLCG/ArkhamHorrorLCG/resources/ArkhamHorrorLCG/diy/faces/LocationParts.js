@@ -34,13 +34,13 @@ define([
     }
 
     // name: LocationIcon or Connection<n>Icon. A back's 'Copy front' takes
-    // the front's icon. base: the circle a location icon sits on.
+    // the front's icon. base: paints the face's iconCircle under the icon.
     function paintIcon(face, g, diy, sheet, name, suffix, base) {
         if (base)
             sheet.paintImage(
                 g,
                 imageutils.ImageUtils.get(
-                    'ArkhamHorrorLCG/overlays/AHLCG-LocationCircle.png'
+                    'ArkhamHorrorLCG/overlays/' + face.iconCircle
                 ),
                 region(face, diy, 'BaseIcon')
             );

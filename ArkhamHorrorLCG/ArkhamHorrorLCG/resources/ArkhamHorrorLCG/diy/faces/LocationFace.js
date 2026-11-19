@@ -34,6 +34,8 @@ define([
     // icons copy the front's
     LocationFace.prototype.connectionChoices = 'comboConnections';
     LocationFace.prototype.noConnection = 'None';
+    // the circle under the location icon
+    LocationFace.prototype.iconCircle = 'AHLCG-LocationCircleFront.png';
 
     LocationFace.prototype.iconChoices = function (faceIndex) {
         return faceIndex === 0
