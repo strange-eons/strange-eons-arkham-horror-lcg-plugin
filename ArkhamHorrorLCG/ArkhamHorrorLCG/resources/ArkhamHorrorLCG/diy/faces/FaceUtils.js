@@ -296,14 +296,6 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
         );
     }
 
-    // Markup for <part><suffix> alone, without its spacing; '' if empty.
-    function partMarkup(settings, part, suffix, formats) {
-        var entry = String(settings.get(part + suffix, ''));
-        if (entry === '') return '';
-        var format = (formats && formats[part]) || PartFormats[part];
-        return format[0] + format[1] + entry + format[2];
-    }
-
     // Markup for the parts with text, keyed <part><suffix>, each on its own
     // line and followed by its <part><suffix>Spacing in points, if it has
     // one. An empty Traits part leaves a little space. formats gives
@@ -319,8 +311,9 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
         parts.forEach(function (part) {
             let entry = String(settings.get(part + suffix, ''));
             if (entry !== '') {
+                let format = (formats && formats[part]) || PartFormats[part];
                 if (text !== '') text += '\n';
-                text += partMarkup(settings, part, suffix, formats);
+                text += format[0] + format[1] + entry + format[2];
             }
 
             let spacing = settings.get(part + suffix + 'Spacing');
@@ -356,7 +349,6 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
         polygonShape: polygonShape,
         createTextPanel: createTextPanel,
         partsMarkup: partsMarkup,
-        partMarkup: partMarkup,
         textAreaWidth: textAreaWidth,
         plugin: plugin,
         isUsed: isUsed,
