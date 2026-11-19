@@ -21,7 +21,6 @@ define([
     'faces/FaceUtils',
     'faces/PortraitArt',
     'ui/SubtypeBinding',
-    'se/common',
     'se/imageutils',
     'se/markup',
     'se/strings',
@@ -33,7 +32,6 @@ define([
     FaceUtils,
     PortraitArt,
     SubtypeBinding,
-    common,
     imageutils,
     markup,
     strings,
@@ -74,8 +72,7 @@ define([
     // the parts drawn in the body, if not all of them
     CardFace.prototype.bodyParts = null;
     // Victory sits at the bottom of the body, with Flavor centered above it
-    // (or below the other parts, without Victory), when the user setting
-    // AHLCG-AnchorVictory is yes
+    // (or below the other parts, without Victory)
     CardFace.prototype.anchorsVictory = false;
     CardFace.prototype.parts = [
         'Traits',
@@ -461,9 +458,6 @@ define([
         markup.updateNameTags(box, diy);
         if (
             this.anchorsVictory &&
-            String(
-                common.Settings.getUser().get('AHLCG-AnchorVictory', 'no')
-            ) === 'yes' &&
             this.paintAnchoredBody(g, diy, box, region, suffix)
         )
             return;

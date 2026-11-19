@@ -83,8 +83,6 @@ strangeEonsRenderTest {
     fun RenderSet.flexible(masterDir: String) {
         components = flexible
         masters = renderTest.dir(masterDir)
-        // the legacy set keeps the default layout
-        userSettings.put("AHLCG-AnchorVictory", "yes")
         sharedMasters {
             renderSuffix = "-1.png"
             masterSuffix = "-0.png"
