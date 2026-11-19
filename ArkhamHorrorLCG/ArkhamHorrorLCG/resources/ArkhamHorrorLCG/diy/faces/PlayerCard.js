@@ -9,9 +9,10 @@
 define([
     'faces/CardFace',
     'faces/FaceUtils',
+    'se/common',
     'se/imageutils',
     'se/java',
-], function (CardFace, FaceUtils, imageutils, Java) {
+], function (CardFace, FaceUtils, common, imageutils, Java) {
     const Color = Java.type('java.awt.Color');
     const TintFilter = Java.type('ca.cgjennings.graphics.filters.TintFilter');
     const Initials = {
@@ -233,8 +234,23 @@ define([
         );
     }
 
-    // a dash image tinted by the face's Dash-tint
+    // a dash: the face's Dash-image vector, 26 wide, or else a dash image
+    // tinted by the face's Dash-tint
     function paintDash(face, g, diy, sheet, r, offsetX, offsetY) {
+        var vector = diy.settings.get(face.key(diy.settings, 'Dash-image'));
+        if (vector != null) {
+            let vi = common.ResourceKit.getVectorImage(String(vector));
+            let height = (26 * vi.getHeight()) / vi.getWidth();
+            vi.paint(
+                g,
+                r.x + (r.width - 26) / 2 + offsetX,
+                r.y + (r.height - height) / 2 + (offsetY || 0),
+                26,
+                height,
+                true
+            );
+            return;
+        }
         r.x = r.x + (r.width - 26) / 2 + offsetX;
         r.y = r.y + (r.height - 10) / 2 + (offsetY || 0);
         r.width = 26;

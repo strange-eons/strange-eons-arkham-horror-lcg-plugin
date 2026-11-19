@@ -36,4 +36,4 @@ AHLCG-TreacheryLocationFace-Subtitle-style = FAMILY: {Eons.namedObjects.AHLCGObj
 AHLCG-TreacheryLocationFace-Subtype-alignment = center, middle
 AHLCG-TreacheryLocationFace-Subtype-style = FAMILY: {Eons.namedObjects.AHLCGObject.typeFamily}; SIZE: {Eons.namedObjects.AHLCGObject.subtypeSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.subtypeWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.subtypeWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.subtypeTracking}; FOREGROUND: #000000
 AHLCG-TreacheryLocationFace-template = ArkhamHorrorLCG/templates/AHLCG-TreacheryLocation.jp2
-AHLCG-TreacheryLocationFace-Dash-tint = 38.0, 0.14, -1.0
+AHLCG-TreacheryLocationFace-Dash-image = ArkhamHorrorLCG/numbers/AHLCG-Cost-Clues-Location--.svg

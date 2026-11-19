@@ -87,5 +87,7 @@ catalog-description_pt = <p>Este plug-in permite a criação de componentes para
     -94a6-404c-ab86-6a3b0e77a7a0/ip_policy_031419_final_v21.pdf</p>
 
 catalog-tags = game
+catalog-requires = \
+    CATALOGUEID{e69d2bd2-f155-4182-a38c-a3a356cfa0fb:2014-4-25-0-0-0-0}
 
 res://ArkhamHorrorLCG/ArkhamHorrorLCG.js

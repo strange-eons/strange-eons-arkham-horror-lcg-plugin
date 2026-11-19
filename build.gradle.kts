@@ -58,6 +58,13 @@ val amdScript = renderTest.file("amd-loader.js")
 strangeEonsRenderTest {
     strangeEonsDir = file(providers.gradleProperty("strangeEonsDir").getOrElse("$projects/strange-eons"))
     bundles.from(baseBundle)
+    // SVG Image Support, a core library the plug-in requires; -PsvgLibrary
+    // names another copy
+    bundles.from(
+        providers.gradleProperty("svgLibrary").getOrElse(
+            "${System.getProperty("user.home")}/.StrangeEons3/plug-ins/core-ScalableVectorGraphics.selibrary"
+        )
+    )
     // -PcomponentsDir renders another fixture set against the same masters
     components = file(providers.gradleProperty("componentsDir").getOrElse("src/renderTest/components"))
     // high-res templates; catches sub-pixel layout shifts
