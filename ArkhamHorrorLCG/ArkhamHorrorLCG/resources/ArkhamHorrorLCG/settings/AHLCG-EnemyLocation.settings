@@ -74,10 +74,6 @@ AHLCG-BaseIcon-region = 9,1,47,46
 AHLCG-EnemyLocation-Copyright-region = 143,513,86,10
 AHLCG-EnemyLocationBack-Copyright-region = 128,513,86,10
 
-# -1 value means inverted color png
-AHLCG-EnemyLocation-Dash-tint = 38.0, 0.14, -1.0
-
-
 AHLCG-EnemyLocation-Label-region = 157,308,61,14
 AHLCG-EnemyLocation-Label-style = FAMILY: {Eons.namedObjects.AHLCGObject.typeFamily}; SIZE: {Eons.namedObjects.AHLCGObject.largeLabelSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.largeLabelWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.largeLabelWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.largeLabelTracking}; FOREGROUND: #000000
 
@@ -101,7 +97,3 @@ AHLCG-EnemyLocation-Horror2-region = 275,341,27,24
 AHLCG-EnemyLocation-Horror3-region = 297,347,27,24
 AHLCG-EnemyLocation-Horror4-region = 319,355,27,24
 AHLCG-EnemyLocation-Horror5-region = 342,365,27,24
-
-AHLCG-EnemyLocation-Dash-tint = 38.0, 0.14, 1.0
-
-

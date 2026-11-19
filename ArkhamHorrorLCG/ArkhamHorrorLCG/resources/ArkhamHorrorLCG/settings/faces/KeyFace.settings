@@ -14,7 +14,6 @@ AHLCG-KeyFace-CollectionNumber-style = FAMILY: {Eons.namedObjects.AHLCGObject.co
 AHLCG-KeyFace-Copyright-alignment = center, middle
 AHLCG-KeyFace-Copyright-region = 124,516,86,10
 AHLCG-KeyFace-Copyright-style = FAMILY: {Eons.namedObjects.AHLCGObject.collectionFamily}; SIZE: {Eons.namedObjects.AHLCGObject.collectionSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.collectionWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.collectionWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.collectionTracking}; FOREGROUND: #FFFFFF
-AHLCG-KeyFace-Dash-tint = 0.0, 0.0, 1.0
 AHLCG-KeyFace-EncounterIcon-region = 320,11,32,32
 AHLCG-KeyFace-EncounterNumber-region = 247,516,55,10
 AHLCG-KeyFace-EncounterNumber-style = FAMILY: {Eons.namedObjects.AHLCGObject.collectionFamily}; SIZE: {Eons.namedObjects.AHLCGObject.collectionSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.collectionWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.collectionWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.collectionTracking}; FOREGROUND: #FFFFFF

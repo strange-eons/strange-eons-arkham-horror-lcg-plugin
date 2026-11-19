@@ -50,8 +50,6 @@ AHLCG-Story-Copyright-style = FAMILY: {Eons.namedObjects.AHLCGObject.collectionF
 #AHLCG-StoryChaos-Copyright-style = FAMILY: {Eons.namedObjects.AHLCGObject.collectionFamily}; SIZE: {Eons.namedObjects.AHLCGObject.collectionSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.collectionWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.collectionWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.collectionTracking}; FOREGROUND: #FFFFFF
 AHLCG-Story-Copyright-alignment = left, middle
 
-AHLCG-Story-Dash-tint = 38.0, 0.14, 1.0
-
 # Chaos template story cards
 AHLCG-StoryChaos-Header-region = 35,135,300,305
 #AHLCG-StoryChaos-Body-region = 95,156,240,305

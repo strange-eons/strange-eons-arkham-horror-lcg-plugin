@@ -74,9 +74,6 @@ AHLCG-BaseIcon-region = 9,1,47,46
 AHLCG-Location-Copyright-region = 143,513,86,10
 AHLCG-LocationBack-Copyright-region = 128,513,86,10
 
-# -1 value means inverted color png
-AHLCG-Location-Dash-tint = 38.0, 0.14, -1.0
-
 AHLCG-Location-Connection1Icon-region = 67,466,35,35
 AHLCG-Location-Connection2Icon-region = 108,458,35,35
 AHLCG-Location-Connection3Icon-region = 149,455,35,35

@@ -37,8 +37,5 @@ AHLCG-AgendaFrontPortrait-DoomPerInv-region = 445,196,50,49
 #AHLCG-AgendaFrontPortrait-DoomPerInvIcon-region = 473,201,30,48
 AHLCG-AgendaFrontPortrait-DoomPerInvIcon-region = 472,195,29,49
 
-AHLCG-AgendaFrontPortrait-Dash-tint = 38.0, 0.14, 1.0
-
 AHLCG-AgendaFrontPortrait-Artist-region = 14,356,129,10
 AHLCG-AgendaFrontPortrait-Copyright-region = 208,356,80,10
-
