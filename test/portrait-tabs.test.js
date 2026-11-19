@@ -71,6 +71,7 @@ function face(names) {
     return {
         portraits: names,
         suffix: side => side === 0 ? '' : 'Back',
+        mirrorsArtEdges: () => false,
         createInterface() {
             return { general: [{ panel: new Grid(), title: 'Stats' }],
                 tabs: [{ panel: new Grid(), title: 'Rules' }] };
