@@ -234,18 +234,19 @@ define([
         );
     }
 
-    // a dash: the face's Dash-image vector, 26 wide, or else a dash image
-    // tinted by the face's Dash-tint
-    function paintDash(face, g, diy, sheet, r, offsetX, offsetY) {
-        var vector = diy.settings.get(face.key(diy.settings, 'Dash-image'));
+    // a dash: the face's <name>-image vector, 20 wide, or else a dash image
+    // tinted by the face's <name>-tint; name defaults to Dash
+    function paintDash(face, g, diy, sheet, r, offsetX, offsetY, name) {
+        name = name || 'Dash';
+        var vector = diy.settings.get(face.key(diy.settings, name + '-image'));
         if (vector != null) {
             let vi = common.ResourceKit.getVectorImage(String(vector));
-            let height = (26 * vi.getHeight()) / vi.getWidth();
+            let height = (20 * vi.getHeight()) / vi.getWidth();
             vi.paint(
                 g,
-                r.x + (r.width - 26) / 2 + offsetX,
+                r.x + (r.width - 20) / 2 + offsetX,
                 r.y + (r.height - height) / 2 + (offsetY || 0),
-                26,
+                20,
                 height,
                 true
             );
@@ -255,7 +256,7 @@ define([
         r.y = r.y + (r.height - 10) / 2 + (offsetY || 0);
         r.width = 26;
         r.height = 10;
-        var hsb = diy.settings.getTint(face.key(diy.settings, 'Dash-tint'));
+        var hsb = diy.settings.getTint(face.key(diy.settings, name + '-tint'));
         var dash = imageutils.ImageUtils.get(
             hsb[2] >= 0
                 ? 'ArkhamHorrorLCG/numbers/AHLCG-Cost--.png'

@@ -47,14 +47,14 @@ function card(values) {
     };
 }
 
-test('paintDash paints a Dash-image vector 26 wide, centered with its offsets', () => {
+test('paintDash paints a Dash-image vector 20 wide, centered with its offsets', () => {
     calls.length = 0;
     vectors.length = 0;
     const svg = 'ArkhamHorrorLCG/numbers/AHLCG-Cost-Clues-Location--.svg';
     PlayerCard.paintDash(face, 'g', card({ 'AHLCG-TestFace-Dash-image': svg }), sheet, { x: 10, y: 20, width: 40, height: 30 }, 2, 6);
-    const height = (26 * 4.63) / 11.43;
+    const height = (20 * 4.63) / 11.43;
     assert.deepEqual(vectors, [svg]);
-    assert.deepEqual(calls, [['vector', 10 + 7 + 2, 20 + (30 - height) / 2 + 6, 26, height, true]]);
+    assert.deepEqual(calls, [['vector', 10 + 10 + 2, 20 + (30 - height) / 2 + 6, 20, height, true]]);
 });
 
 test('paintDash tints the dash image without a Dash-image', () => {
@@ -67,4 +67,17 @@ test('paintDash tints the dash image without a Dash-image', () => {
         PlayerCard.paintDash(face, 'g', card({ 'AHLCG-TestFace-Dash-tint': tint }), sheet, { ...r }, 0);
         assert.deepEqual(calls, [['image', { image, tint: [38, 0.14, 1] }, { x: 17, y: 30, width: 26, height: 10 }]]);
     }
+});
+
+test('paintDash reads a named dash image', () => {
+    calls.length = 0;
+    vectors.length = 0;
+    const svg = 'ArkhamHorrorLCG/numbers/AHLCG-Cost-Clues-Act--.svg';
+    const values = {
+        'AHLCG-TestFace-Dash-image': 'ArkhamHorrorLCG/numbers/AHLCG-Cost-Clues-Location--.svg',
+        'AHLCG-TestFace-ShroudDash-image': svg,
+    };
+    PlayerCard.paintDash(face, 'g', card(values), sheet, { x: 0, y: 0, width: 20, height: 10 }, 0, 0, 'ShroudDash');
+    assert.deepEqual(vectors, [svg]);
+    assert.equal(calls.length, 1);
 });

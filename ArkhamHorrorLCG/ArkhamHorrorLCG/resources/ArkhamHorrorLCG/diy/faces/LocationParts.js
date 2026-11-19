@@ -81,7 +81,7 @@ define([
         else if (shroud === 'X') r.x -= 1;
 
         if (shroud === '-') {
-            title(sheet, g, shroud, r, o.symbolFont, 12.0, true, 1.5);
+            PlayerCard.paintDash(face, g, diy, sheet, r, 0, 6, 'ShroudDash');
         } else if (perInvestigator) {
             let value = region(face, diy, 'ShroudPerInv');
             let icon = region(face, diy, 'ShroudPerInvIcon');
