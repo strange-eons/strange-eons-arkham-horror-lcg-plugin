@@ -50,7 +50,6 @@ define([
     EventFace.prototype.constructor = EventFace;
     EventFace.prototype.template = 'AHLCG-EventFace';
     EventFace.prototype.labelKey = 'AHLCG-Label-Event';
-    EventFace.prototype.anchorsVictory = true;
 
     EventFace.prototype.defaultValues = function (diy, faceIndex) {
         var values = {

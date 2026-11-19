@@ -45,7 +45,6 @@ define([
     AssetFace.prototype.template = 'AHLCG-AssetFace';
     AssetFace.prototype.labelKey = 'AHLCG-Label-Asset';
     AssetFace.prototype.hasSubtitle = true;
-    AssetFace.prototype.anchorsVictory = true;
 
     function isStory(cardClass) {
         return ['Reward', 'Story', 'StoryWeakness'].includes(cardClass);
