@@ -19,3 +19,5 @@ AHLCG-Face-Encounter-portrait-pany = 0
 AHLCG-Face-Encounter-portrait-rotation = 0
 AHLCG-Face-Encounter-portrait-clip-region = 307,33,32,32
 AHLCG-Face-Copyright-alignment = left, middle
+AHLCG-Face-StaminaDash-image = ArkhamHorrorLCG/numbers/AHLCG-Stamina--.svg
+AHLCG-Face-SanityDash-image = ArkhamHorrorLCG/numbers/AHLCG-Sanity--.svg

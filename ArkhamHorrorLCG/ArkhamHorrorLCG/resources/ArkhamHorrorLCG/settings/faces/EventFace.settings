@@ -22,7 +22,8 @@ AHLCG-EventFace-Copyright-region = 137,512,101,10
 AHLCG-EventFace-Copyright-style = FAMILY: {Eons.namedObjects.AHLCGObject.collectionFamily}; SIZE: {Eons.namedObjects.AHLCGObject.collectionSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.collectionWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.collectionWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.collectionTracking}; FOREGROUND: #FFFFFF
 AHLCG-EventFace-Cost-region = 18,11,40,38
 AHLCG-EventFace-D-template = ArkhamHorrorLCG/templates/AHLCG-Event-D.jp2
-AHLCG-EventFace-Dash-tint = 0.0, 0.0, 1.0
+AHLCG-EventFace-Dash-image = ArkhamHorrorLCG/numbers/AHLCG-Cost--.svg
+AHLCG-EventFace-Dash-width = 18
 AHLCG-EventFace-Encounter-overlay-region = 155,248,64,64
 # a story weakness's circle and encounter icon
 AHLCG-EventFace-StoryWeakness-overlay-region = 162,247,54,53

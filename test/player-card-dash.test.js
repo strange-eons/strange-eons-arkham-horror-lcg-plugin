@@ -16,11 +16,7 @@ function load(name, modules, globals = {}) {
 
 const calls = [];
 const vectors = [];
-const Java = {
-    type: () => function TintFilter(h, s, b) {
-        this.filter = image => ({ image, tint: [h, s, b] });
-    },
-};
+const Java = { type: () => function JavaClass() {} };
 const common = {
     ResourceKit: {
         getVectorImage(name) {
@@ -34,15 +30,16 @@ const common = {
     },
 };
 const imageutils = { ImageUtils: { get: name => name } };
-const PlayerCard = load('faces/PlayerCard.js', { 'se/common': common, 'se/imageutils': imageutils, 'se/java': Java }, { Java });
+const FaceUtils = { plugin: () => ({}) };
+const PlayerCard = load('faces/PlayerCard.js', { 'faces/FaceUtils': FaceUtils, 'se/common': common, 'se/imageutils': imageutils, 'se/java': Java }, { Java });
 
 const face = { key: (settings, name) => 'AHLCG-TestFace-' + name };
 const sheet = { paintImage: (g, image, r) => calls.push(['image', image, { ...r }]) };
 function card(values) {
     return {
         settings: {
-            get: key => values[key],
-            getTint: key => values[key],
+            get: (key, fallback) => (key in values ? values[key] : fallback),
+            getRegion: () => ({ x: 0, y: 0, width: 40, height: 30 }),
         },
     };
 }
@@ -57,16 +54,15 @@ test('paintDash paints a Dash-image vector 20 wide, centered with its offsets', 
     assert.deepEqual(calls, [['vector', 10 + 10 + 2, 20 + (30 - height) / 2 + 6, 20, height, true]]);
 });
 
-test('paintDash tints the dash image without a Dash-image', () => {
-    const r = { x: 10, y: 20, width: 40, height: 30 };
-    for (const [tint, image] of [
-        [[38, 0.14, 1], 'ArkhamHorrorLCG/numbers/AHLCG-Cost--.png'],
-        [[38, 0.14, -1], 'ArkhamHorrorLCG/numbers/AHLCG-Cost--Inverted.png'],
-    ]) {
-        calls.length = 0;
-        PlayerCard.paintDash(face, 'g', card({ 'AHLCG-TestFace-Dash-tint': tint }), sheet, { ...r }, 0);
-        assert.deepEqual(calls, [['image', { image, tint: [38, 0.14, 1] }, { x: 17, y: 30, width: 26, height: 10 }]]);
-    }
+test('paintDash takes its width from <name>-width', () => {
+    calls.length = 0;
+    vectors.length = 0;
+    const svg = 'ArkhamHorrorLCG/numbers/AHLCG-Cost--.svg';
+    const values = { 'AHLCG-TestFace-Dash-image': svg, 'AHLCG-TestFace-Dash-width': '18' };
+    PlayerCard.paintDash(face, 'g', card(values), sheet, { x: 0, y: 0, width: 40, height: 30 }, 0);
+    const height = (18 * 4.63) / 11.43;
+    assert.deepEqual(vectors, [svg]);
+    assert.deepEqual(calls, [['vector', 11, (30 - height) / 2, 18, height, true]]);
 });
 
 test('paintDash reads a named dash image', () => {
@@ -80,4 +76,21 @@ test('paintDash reads a named dash image', () => {
     PlayerCard.paintDash(face, 'g', card(values), sheet, { x: 0, y: 0, width: 20, height: 10 }, 0, 0, 'ShroudDash');
     assert.deepEqual(vectors, [svg]);
     assert.equal(calls.length, 1);
+});
+
+test('paintStat fits a null stat dash to its own fractional region', () => {
+    for (const name of ['Stamina', 'Sanity']) {
+        calls.length = 0;
+        vectors.length = 0;
+        const svg = `ArkhamHorrorLCG/numbers/AHLCG-${name}--.svg`;
+        const diy = card({ [name]: '-', [`AHLCG-TestFace-${name}Dash-image`]: svg });
+        diy.settings.getRegion2D = key => {
+            assert.equal(key, `AHLCG-TestFace-${name}Dash-region`);
+            return { x: 1.5, y: 2.25, width: 15, height: 6.5 };
+        };
+        PlayerCard.paintStat(face, 'g', diy, sheet, '', name);
+        assert.deepEqual(vectors, [svg], name);
+        assert.equal(calls[0][1], `ArkhamHorrorLCG/overlays/AHLCG-${name}Base.png`, name);
+        assert.deepEqual(calls[1], ['vector', 1.5, 2.25, 15, 6.5, true], name);
+    }
 });

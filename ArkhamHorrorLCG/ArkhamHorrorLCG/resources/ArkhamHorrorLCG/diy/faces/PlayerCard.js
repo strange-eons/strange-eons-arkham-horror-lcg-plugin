@@ -14,7 +14,6 @@ define([
     'se/java',
 ], function (CardFace, FaceUtils, common, imageutils, Java) {
     const Color = Java.type('java.awt.Color');
-    const TintFilter = Java.type('ca.cgjennings.graphics.filters.TintFilter');
     const Initials = {
         Guardian: 'G',
         ParallelGuardian: 'GP',
@@ -234,37 +233,40 @@ define([
         );
     }
 
-    // a dash: the face's <name>-image vector, 20 wide, or else a dash image
-    // tinted by the face's <name>-tint; name defaults to Dash
+    // a dash: the face's <name>-image vector, <name>-width wide (20 if
+    // unset); name defaults to Dash
     function paintDash(face, g, diy, sheet, r, offsetX, offsetY, name) {
         name = name || 'Dash';
         var vector = diy.settings.get(face.key(diy.settings, name + '-image'));
-        if (vector != null) {
-            let vi = common.ResourceKit.getVectorImage(String(vector));
-            let height = (20 * vi.getHeight()) / vi.getWidth();
-            vi.paint(
-                g,
-                r.x + (r.width - 20) / 2 + offsetX,
-                r.y + (r.height - height) / 2 + (offsetY || 0),
-                20,
-                height,
-                true
-            );
-            return;
-        }
-        r.x = r.x + (r.width - 26) / 2 + offsetX;
-        r.y = r.y + (r.height - 10) / 2 + (offsetY || 0);
-        r.width = 26;
-        r.height = 10;
-        var hsb = diy.settings.getTint(face.key(diy.settings, name + '-tint'));
-        var dash = imageutils.ImageUtils.get(
-            hsb[2] >= 0
-                ? 'ArkhamHorrorLCG/numbers/AHLCG-Cost--.png'
-                : 'ArkhamHorrorLCG/numbers/AHLCG-Cost--Inverted.png',
+        var width = Number(
+            diy.settings.get(face.key(diy.settings, name + '-width')) || 20
+        );
+        var vi = common.ResourceKit.getVectorImage(String(vector));
+        var height = (width * vi.getHeight()) / vi.getWidth();
+        vi.paint(
+            g,
+            r.x + (r.width - width) / 2 + offsetX,
+            r.y + (r.height - height) / 2 + (offsetY || 0),
+            width,
+            height,
             true
         );
-        var filter = new TintFilter(hsb[0], hsb[1], Math.abs(hsb[2]));
-        sheet.paintImage(g, filter.filter(dash, null), r);
+    }
+
+    // the face's <name>-image vector, fit to its fractional <name>-region
+    function paintVector(face, g, diy, name) {
+        var vector = diy.settings.get(face.key(diy.settings, name + '-image'));
+        var r = diy.settings.getRegion2D(
+            face.key(diy.settings, name + '-region')
+        );
+        common.ResourceKit.getVectorImage(String(vector)).paint(
+            g,
+            r.x,
+            r.y,
+            r.width,
+            r.height,
+            true
+        );
     }
 
     // centered: the dash sits on the level circle or weakness art's center
@@ -346,23 +348,23 @@ define([
     const Light = new Color(0.996, 0.945, 0.859);
     const Stats = {
         Stamina: {
-            outline: new Color(0.68, 0.12, 0.22),
-            x: { '-': -1, X: -2, '': -1, '*': -2, 1: -1, 2: -2, 3: -2 },
-            y: { '-': -5, '*': 14, X: -4, '': -1, 1: -3, 2: -3, 3: -3, 4: -3 },
+            outline: new Color(0xc82127),
+            x: { X: -2, '': -1, '*': -2, 1: -1, 2: -2, 3: -2 },
+            y: { '*': 14, X: -4, '': -1, 1: -3, 2: -3, 3: -3, 4: -3 },
             defaultX: -1,
             defaultY: -4,
         },
         Sanity: {
-            outline: new Color(0.25, 0.33, 0.44),
-            x: { '-': 0, X: -2, '': -1, '*': 0, 1: -1, 4: -1, 8: -1 },
-            y: { '-': -7, X: -4, '': -1, '*': 12, 1: -5, 2: -5, 3: -5, 4: -5 },
+            outline: new Color(0x18477a),
+            x: { X: -2, '': -1, '*': 0, 1: -1, 4: -1, 8: -1 },
+            y: { X: -4, '': -1, '*': 12, 1: -5, 2: -5, 3: -5, 4: -5 },
             defaultX: 0,
             defaultY: -6,
         },
     };
 
-    // Health (Stamina) or Sanity on its base: a dash, a star, a per
-    // investigator value or a number, each offset to sit on the base.
+    // Health (Stamina) or Sanity on its base: a <name>Dash vector, or a star,
+    // a per investigator value or a number, each offset to sit on the base.
     function paintStat(face, g, diy, sheet, suffix, name) {
         var o = FaceUtils.plugin();
         var stat = Stats[name];
@@ -372,7 +374,11 @@ define([
 
         var r = region(face, diy, name);
         sheet.paintImage(g, image('overlays/AHLCG-' + name + 'Base.png'), r);
-        var known = /^(-|X|\*|)$/.test(value) || /^([1-9]|1[0-5])$/.test(value);
+        if (value === '-') {
+            paintVector(face, g, diy, name + 'Dash');
+            return;
+        }
+        var known = /^(X|\*|)$/.test(value) || /^([1-9]|1[0-5])$/.test(value);
         var key = known ? value : 'X';
         r.x += key in stat.x ? stat.x[key] : stat.defaultX;
         r.y += key in stat.y ? stat.y[key] : stat.defaultY;
@@ -392,8 +398,7 @@ define([
             );
         }
 
-        if (value === '-') title(value, r, o.symbolFont, 9.8);
-        else if (value === '*') title(value, r, o.costFont, 18.5);
+        if (value === '*') title(value, r, o.costFont, 18.5);
         else if (
             String(diy.settings.get('PerInvestigator' + name + suffix)) === '1'
         ) {
