@@ -11,7 +11,7 @@
 // card that isn't a weakness, or a story weakness, shows the encounter set.
 //
 // Subclasses set labelKey, and may set hasSubtitle, hasUnique, subtypes,
-// weaknessOverlays and parts, and override templateKey, bodyShape and
+// weaknessOverlays, parts and anchorsVictory, and override templateKey, bodyShape and
 // paintContent.
 //
 // Module: returns CardFace.
@@ -19,6 +19,7 @@ define([
     'faces/CollectorInfo',
     'faces/Face',
     'faces/FaceUtils',
+    'faces/AnchorLayout',
     'faces/PortraitArt',
     'ui/SubtypeBinding',
     'se/imageutils',
@@ -30,6 +31,7 @@ define([
     CollectorInfo,
     Face,
     FaceUtils,
+    AnchorLayout,
     PortraitArt,
     SubtypeBinding,
     imageutils,
@@ -70,6 +72,10 @@ define([
     CardFace.prototype.spacedParts = null;
     // the parts drawn in the body, if not all of them
     CardFace.prototype.bodyParts = null;
+    // AnchorVictory<suffix> puts Victory at the body's bottom and centers
+    // Flavor (see AnchorLayout); a project chooses it for new cards (see
+    // ProjectDefaults)
+    CardFace.prototype.anchorsVictory = false;
     CardFace.prototype.parts = [
         'Traits',
         'Keywords',
@@ -83,7 +89,9 @@ define([
         return {};
     };
 
-    CardFace.prototype.setDefaults = function (diy, faceIndex, keep) {
+    // project, if given, holds the project's AnchorVictory, which a side
+    // still at the default takes
+    CardFace.prototype.setDefaults = function (diy, faceIndex, keep, project) {
         var values = this.defaultValues(diy, faceIndex);
         if (this.subtypes != null) {
             let key = 'Subtype' + this.suffix(faceIndex);
@@ -107,6 +115,18 @@ define([
             spacing[part + suffix + 'Spacing'] = '0';
         });
         this.setSettings(diy, keep, spacing);
+
+        if (!this.anchorsVictory) return;
+        var key = AnchorLayout.KEY + suffix;
+        var anchor = {};
+        anchor[key] = '0';
+        this.setSettings(diy, keep, anchor);
+        if (
+            project != null &&
+            AnchorLayout.KEY in project &&
+            String(diy.settings.get(key)) === '0'
+        )
+            diy.settings.set(key, project[AnchorLayout.KEY]);
     };
 
     CardFace.prototype.clearType = function (diy, faceIndex) {
@@ -445,14 +465,61 @@ define([
                 o.bodyFontTightness
         );
         box.setTextFitting(markup.FIT_SCALE_TEXT);
+        var parts = this.bodyParts || this.parts;
+        var formats = this.partFormats(diy, suffix);
         box.markupText = FaceUtils.partsMarkup(
             settings,
-            this.bodyParts || this.parts,
+            parts,
             suffix,
-            this.partFormats(diy, suffix)
+            formats
         );
         markup.updateNameTags(box, diy);
+        if (
+            this.anchorsVictory &&
+            this.paintAnchoredBody(g, diy, box, region, parts, suffix, formats)
+        )
+            return;
         box.draw(g, region);
+    };
+
+    // Draws the parts with Victory at the bottom and Flavor centered, as
+    // space in one box, when the side anchors and the text fits unscaled;
+    // otherwise draws nothing and returns false.
+    CardFace.prototype.paintAnchoredBody = function (
+        g,
+        diy,
+        box,
+        region,
+        parts,
+        suffix,
+        formats
+    ) {
+        var anchors = AnchorLayout.anchors(diy.settings, parts, suffix);
+        if (anchors == null) return false;
+
+        var full = box.markupText;
+        function text(total) {
+            return FaceUtils.partsMarkup(
+                diy.settings,
+                parts,
+                suffix,
+                formats,
+                AnchorLayout.pads(anchors, total)
+            );
+        }
+
+        box.setTextFitting(markup.FIT_NONE);
+        var total = AnchorLayout.solve(function (total) {
+            box.markupText = text(total);
+            return box.measure(g, region);
+        }, region.height);
+        if (total != null) {
+            box.markupText = text(total);
+            box.draw(g, region);
+        }
+        box.markupText = full;
+        box.setTextFitting(markup.FIT_SCALE_TEXT);
+        return total != null;
     };
 
     // A weakness's overlay, icon and subtype line; the overlay and icon are

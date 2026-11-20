@@ -177,7 +177,8 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
     // Game text fields for parts (Traits, Keywords, Header, Rules, Victory or
     // another name), keyed <part><partSuffix> and bound by face, with spacing
     // spinners between them, keyed <part><partSuffix><face suffix>Spacing as
-    // legacy cards save them.
+    // legacy cards save them. A face with anchorsVictory ends with a check
+    // box for AnchorVictory<face suffix>.
     function createTextPanel(
         face,
         bindings,
@@ -276,6 +277,20 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
             }
         }
 
+        if (face.anchorsVictory) {
+            let anchor = new ui.checkBox(
+                strings.string('AHLCG-AnchorVictory'),
+                false
+            );
+            face.bindKey(
+                bindings,
+                faceIndex,
+                'AnchorVictory' + face.suffix(faceIndex),
+                anchor
+            );
+            panel.place(anchor, 'skip, span, wrap');
+        }
+
         return panel;
     }
 
@@ -299,9 +314,14 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
     // Markup for the parts with text, keyed <part><suffix>, each on its own
     // line and followed by its <part><suffix>Spacing in points, if it has
     // one. An empty Traits part leaves a little space. formats gives
-    // [ alignment, start, end ] for parts other than the standard ones.
-    function partsMarkup(settings, parts, suffix, formats) {
+    // [ alignment, start, end ] for parts other than the standard ones. pads
+    // gives { before, after } points of space around parts, merged into the
+    // spacing next to them where there is some.
+    function partsMarkup(settings, parts, suffix, formats, pads) {
         var text = '';
+        // where the space after the last part starts, and its points
+        var spaceAt = -1;
+        var space = 0;
         if (
             parts.indexOf('Traits') >= 0 &&
             String(settings.get('Traits' + suffix, '')) === ''
@@ -310,19 +330,38 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
 
         parts.forEach(function (part) {
             let entry = String(settings.get(part + suffix, ''));
+            let pad = (entry !== '' && pads && pads[part]) || null;
             if (entry !== '') {
                 let format = (formats && formats[part]) || PartFormats[part];
+                if (pad != null && pad.before > 0) {
+                    if (spaceAt >= 0)
+                        text =
+                            text.substring(0, spaceAt) +
+                            '\n' +
+                            spacer(space + pad.before);
+                    else text += (text !== '' ? '\n' : '') + spacer(pad.before);
+                }
                 if (text !== '') text += '\n';
                 text += format[0] + format[1] + entry + format[2];
             }
+            spaceAt = -1;
 
+            let after = pad != null ? pad.after : 0;
             let spacing = settings.get(part + suffix + 'Spacing');
-            if (spacing == null) return;
+            if (spacing == null) {
+                if (after > 0) {
+                    spaceAt = text.length;
+                    space = after;
+                    text += '\n' + spacer(after);
+                }
+                return;
+            }
             spacing = Math.max(Number(spacing), 0);
-            if (entry !== '')
-                text +=
-                    '\n' + spacer((part === 'Traits' ? 0.5 : 1.5) + spacing);
-            else if (spacing > 0) text += spacer(spacing);
+            if (entry !== '') {
+                spaceAt = text.length;
+                space = (part === 'Traits' ? 0.5 : 1.5) + spacing + after;
+                text += '\n' + spacer(space);
+            } else if (spacing > 0) text += spacer(spacing);
         });
         return text;
     }
