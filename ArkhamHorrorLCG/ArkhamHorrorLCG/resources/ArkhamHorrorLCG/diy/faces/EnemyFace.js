@@ -22,6 +22,7 @@ define([
     EnemyFace.prototype.labelKey = 'AHLCG-Label-Enemy';
     EnemyFace.prototype.hasSubtitle = true;
     EnemyFace.prototype.fillReturnEncounterIcon = true;
+    EnemyFace.prototype.fillsParts = true;
     EnemyFace.prototype.subtypes = [
         'None',
         'BasicWeakness',

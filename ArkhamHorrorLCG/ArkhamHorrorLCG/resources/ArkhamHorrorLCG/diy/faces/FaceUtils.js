@@ -1,16 +1,18 @@
 // Helpers shared by faces.
 //
 // Module: returns FaceUtils.
-define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
-    common,
-    Java,
-    strings,
-    ui
-) {
+define([
+    'faces/FillLayout',
+    'se/common',
+    'se/java',
+    'se/strings',
+    'se/ui',
+], function (FillLayout, common, Java, strings, ui) {
     const Path = Java.type('java.awt.geom.Path2D$Double');
     const GeometricShape = Java.type(
         'ca.cgjennings.layout.PageShape$GeometricShape'
     );
+    const ListItem = Java.type('ca.cgjennings.apps.arkham.diy.ListItem');
     const POINTS_PER_INCH = 72;
     const IconSizes = { s: '0.14in', m: '0.35in', l: '0.60in' };
 
@@ -177,7 +179,9 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
     // Game text fields for parts (Traits, Keywords, Header, Rules, Victory or
     // another name), keyed <part><partSuffix> and bound by face, with spacing
     // spinners between them, keyed <part><partSuffix><face suffix>Spacing as
-    // legacy cards save them.
+    // legacy cards save them. A face with fillsParts adds a fill check box
+    // and fill alignment to each part, keyed <part><partSuffix><face
+    // suffix>Fill and FillAlignment; alignment is enabled only with fill.
     function createTextPanel(
         face,
         bindings,
@@ -259,6 +263,9 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
                 );
             }
 
+            let fill = face.fillsParts
+                ? fillControls(face, bindings, faceIndex, key)
+                : null;
             if (i + 1 < parts.length) {
                 let spacing = new ui.spinner(0, 50, 1, 1);
                 face.bindKey(
@@ -271,12 +278,37 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
                     strings.string('AHLCG-Spacing'),
                     'align right',
                     spacing,
-                    'wrap'
+                    fill == null ? 'wrap' : 'split 3, sizegroup spacing'
                 );
+            } else if (fill != null) {
+                // keeps the fill controls in line with those above
+                panel.place('', 'skip, split 3, sizegroup spacing');
             }
+            if (fill != null)
+                panel.place(fill.check, 'gapleft 10', fill.alignment, 'wrap');
         }
 
         return panel;
+    }
+
+    // the fill check box and alignment list of a part, keyed by key and the
+    // face suffix
+    function fillControls(face, bindings, faceIndex, key) {
+        var base = key + face.suffix(faceIndex) + 'Fill';
+        var check = ui.checkBox(strings.string('AHLCG-Fill'), false);
+        var alignment = ui.comboBox(
+            FillLayout.ALIGNMENTS.map(function (id) {
+                return new ListItem(id, strings.string('AHLCG-Fill-' + id));
+            }),
+            null
+        );
+        alignment.setEnabled(false);
+        check.addItemListener(function () {
+            alignment.setEnabled(check.isSelected());
+        });
+        face.bindKey(bindings, faceIndex, base, check);
+        face.bindKey(bindings, faceIndex, base + 'Alignment', alignment);
+        return { check: check, alignment: alignment };
     }
 
     // alignment, start and end markup of each part
@@ -299,9 +331,14 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
     // Markup for the parts with text, keyed <part><suffix>, each on its own
     // line and followed by its <part><suffix>Spacing in points, if it has
     // one. An empty Traits part leaves a little space. formats gives
-    // [ alignment, start, end ] for parts other than the standard ones.
-    function partsMarkup(settings, parts, suffix, formats) {
+    // [ alignment, start, end ] for parts other than the standard ones. pads
+    // gives { before, after } points of space around parts, merged into the
+    // spacing next to them where there is some.
+    function partsMarkup(settings, parts, suffix, formats, pads) {
         var text = '';
+        // where the space after the last part starts, and its points
+        var spaceAt = -1;
+        var space = 0;
         if (
             parts.indexOf('Traits') >= 0 &&
             String(settings.get('Traits' + suffix, '')) === ''
@@ -310,19 +347,38 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
 
         parts.forEach(function (part) {
             let entry = String(settings.get(part + suffix, ''));
+            let pad = (entry !== '' && pads && pads[part]) || null;
             if (entry !== '') {
                 let format = (formats && formats[part]) || PartFormats[part];
+                if (pad != null && pad.before > 0) {
+                    if (spaceAt >= 0)
+                        text =
+                            text.substring(0, spaceAt) +
+                            '\n' +
+                            spacer(space + pad.before);
+                    else text += (text !== '' ? '\n' : '') + spacer(pad.before);
+                }
                 if (text !== '') text += '\n';
                 text += format[0] + format[1] + entry + format[2];
             }
+            spaceAt = -1;
 
+            let after = pad != null ? pad.after : 0;
             let spacing = settings.get(part + suffix + 'Spacing');
-            if (spacing == null) return;
+            if (spacing == null) {
+                if (after > 0) {
+                    spaceAt = text.length;
+                    space = after;
+                    text += '\n' + spacer(after);
+                }
+                return;
+            }
             spacing = Math.max(Number(spacing), 0);
-            if (entry !== '')
-                text +=
-                    '\n' + spacer((part === 'Traits' ? 0.5 : 1.5) + spacing);
-            else if (spacing > 0) text += spacer(spacing);
+            if (entry !== '') {
+                spaceAt = text.length;
+                space = (part === 'Traits' ? 0.5 : 1.5) + spacing + after;
+                text += '\n' + spacer(space);
+            } else if (spacing > 0) text += spacer(spacing);
         });
         return text;
     }

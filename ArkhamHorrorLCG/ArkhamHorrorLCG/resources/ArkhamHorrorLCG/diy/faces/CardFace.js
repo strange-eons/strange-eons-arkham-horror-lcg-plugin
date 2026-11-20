@@ -11,7 +11,7 @@
 // card that isn't a weakness, or a story weakness, shows the encounter set.
 //
 // Subclasses set labelKey, and may set hasSubtitle, hasUnique, subtypes,
-// weaknessOverlays and parts, and override templateKey, bodyShape and
+// weaknessOverlays, parts and fillsParts, and override templateKey, bodyShape and
 // paintContent.
 //
 // Module: returns CardFace.
@@ -19,6 +19,7 @@ define([
     'faces/CollectorInfo',
     'faces/Face',
     'faces/FaceUtils',
+    'faces/FillLayout',
     'faces/PortraitArt',
     'ui/SubtypeBinding',
     'se/imageutils',
@@ -30,6 +31,7 @@ define([
     CollectorInfo,
     Face,
     FaceUtils,
+    FillLayout,
     PortraitArt,
     SubtypeBinding,
     imageutils,
@@ -70,6 +72,8 @@ define([
     CardFace.prototype.spacedParts = null;
     // the parts drawn in the body, if not all of them
     CardFace.prototype.bodyParts = null;
+    // each part can fill the body's leftover space (see FillLayout)
+    CardFace.prototype.fillsParts = false;
     CardFace.prototype.parts = [
         'Traits',
         'Keywords',
@@ -107,6 +111,15 @@ define([
             spacing[part + suffix + 'Spacing'] = '0';
         });
         this.setSettings(diy, keep, spacing);
+
+        if (this.fillsParts) {
+            let fill = {};
+            this.parts.forEach(function (part) {
+                fill[part + suffix + 'Fill'] = '0';
+                fill[part + suffix + 'FillAlignment'] = 'Top';
+            });
+            this.setSettings(diy, keep, fill);
+        }
     };
 
     CardFace.prototype.clearType = function (diy, faceIndex) {
@@ -445,14 +458,61 @@ define([
                 o.bodyFontTightness
         );
         box.setTextFitting(markup.FIT_SCALE_TEXT);
+        var parts = this.bodyParts || this.parts;
+        var formats = this.partFormats(diy, suffix);
         box.markupText = FaceUtils.partsMarkup(
             settings,
-            this.bodyParts || this.parts,
+            parts,
             suffix,
-            this.partFormats(diy, suffix)
+            formats
         );
         markup.updateNameTags(box, diy);
+        if (
+            this.fillsParts &&
+            this.paintFilledBody(g, diy, box, region, parts, suffix, formats)
+        )
+            return;
         box.draw(g, region);
+    };
+
+    // Draws the parts with filling parts sharing the leftover space as space
+    // around them, when any part fills and the text fits unscaled; otherwise
+    // draws nothing and returns false.
+    CardFace.prototype.paintFilledBody = function (
+        g,
+        diy,
+        box,
+        region,
+        parts,
+        suffix,
+        formats
+    ) {
+        var fills = FillLayout.fills(diy.settings, parts, suffix);
+        if (fills == null) return false;
+
+        var full = box.markupText;
+        function text(total) {
+            return FaceUtils.partsMarkup(
+                diy.settings,
+                parts,
+                suffix,
+                formats,
+                FillLayout.pads(fills, total)
+            );
+        }
+
+        box.setTextFitting(markup.FIT_NONE);
+        var total = FillLayout.solve(function (total) {
+            box.markupText = text(total);
+            return box.measure(g, region);
+        }, region.height);
+        if (total != null) {
+            box.markupText = text(total);
+            box.draw(g, region);
+        }
+        box.markupText = full;
+        box.setTextFitting(markup.FIT_SCALE_TEXT);
+        return total != null;
     };
 
     // A weakness's overlay, icon and subtype line; the overlay and icon are
