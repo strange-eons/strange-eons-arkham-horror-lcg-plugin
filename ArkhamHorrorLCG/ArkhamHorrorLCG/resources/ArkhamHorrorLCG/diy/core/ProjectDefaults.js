@@ -3,7 +3,7 @@
 // project's settings as <template>-<key>. Only values other than the face's
 // own defaults are stored.
 //
-// Module: returns { keyOf, read, write, forNewCard }.
+// Module: returns { keyOf, read, write, forNewCard, sidesOf, applyToCard }.
 define(['se/java'], function (java) {
     function keyOf(face, key) {
         return face.template + '-' + key;
@@ -38,5 +38,48 @@ define(['se/java'], function (java) {
         return project == null ? null : read(project.getSettings(), face);
     }
 
-    return { keyOf: keyOf, read: read, write: write, forNewCard: forNewCard };
+    // the sides of a card of this plug-in that show the face: those whose
+    // template its handler set to the face's
+    function sidesOf(component, face) {
+        var DIY = java.type('ca.cgjennings.apps.arkham.diy.DIY');
+        if (!(component instanceof DIY)) return [];
+        if (!/^(res:\/\/)?ArkhamHorrorLCG\//.test(component.getHandlerScript()))
+            return [];
+        var settings = component.settings;
+        var template = String(settings.get(face.template + '-template', ''));
+        return [component.getFrontTemplateKey(), component.getBackTemplateKey()]
+            .map(function (key, faceIndex) {
+                return String(settings.get(key + '-template', '')) === template
+                    ? faceIndex
+                    : -1;
+            })
+            .filter(function (faceIndex) {
+                return faceIndex >= 0;
+            });
+    }
+
+    // Sets values, keyed as by textDefaults, on each side of the card that
+    // shows the face; blank part text is left out. Returns whether it did.
+    function applyToCard(component, face, values) {
+        var sides = sidesOf(component, face);
+        var defaults = face.textDefaults();
+        sides.forEach(function (faceIndex) {
+            Object.keys(values).forEach(function (key) {
+                if (!(key in defaults)) return;
+                let value = String(values[key]);
+                if (face.parts.indexOf(key) >= 0 && value.trim() === '') return;
+                component.settings.set(face.textKey(key, faceIndex), value);
+            });
+        });
+        return sides.length > 0;
+    }
+
+    return {
+        keyOf: keyOf,
+        read: read,
+        write: write,
+        forNewCard: forNewCard,
+        sidesOf: sidesOf,
+        applyToCard: applyToCard,
+    };
 });

@@ -54,11 +54,28 @@ class JList extends Fake {
     setSelectedIndex(i) { this.index = i; this.listeners.forEach(fn => fn()); }
 }
 const dialogs = [];
-const JOptionPane = {
-    DEFAULT_OPTION: 'default',
-    PLAIN_MESSAGE: 'plain',
-    choice: 0,
-    showOptionDialog(...args) { dialogs.push(args); return this.choice; },
+// the user's part: user( pane ) clicks while the dialog shows and returns
+// the option chosen
+class JOptionPane {
+    constructor(...args) { this.args = args; dialogs.push(this); }
+    createDialog(parent, title) {
+        this.title = title;
+        const pane = this;
+        return {
+            setVisible() { pane.value = JOptionPane.user(pane); },
+            dispose() { pane.disposed = true; },
+        };
+    }
+    getValue() { return this.value; }
+}
+Object.assign(JOptionPane, { DEFAULT_OPTION: 'default', PLAIN_MESSAGE: 'plain', user: pane => pane.args[4][0] });
+class JButton extends Fake {
+    addActionListener(fn) { this.listeners.push(fn); }
+    click() { this.listeners.forEach(fn => fn()); }
+}
+const choose = (index, before) => pane => {
+    if (before) before(pane);
+    return pane.args[4][index];
 };
 const registered = [];
 const Actions = {
@@ -67,6 +84,18 @@ const Actions = {
     register: (a, priority) => registered.push(a),
 };
 let openProject = null;
+// the editors open for each file
+const appWindow = { open: {}, getEditorsShowingFile(file) { return this.open[file] ?? []; } };
+// a card: an AHLCG handler whose sides use templates set by its handler
+class DIY {
+    constructor(values = {}, script = 'res://ArkhamHorrorLCG/diy/Enemy.js') {
+        this.script = script;
+        this.settings = settings({ 'AHLCG-EnemyFace-template': 'enemy.jp2', ...values });
+    }
+    getHandlerScript() { return this.script; }
+    getFrontTemplateKey() { return 'Front'; }
+    getBackTemplateKey() { return 'Back'; }
+}
 const caught = [];
 class ListItem {
     constructor(id, label) { this.id = id; this.label = label; }
@@ -74,7 +103,8 @@ class ListItem {
 }
 const types = {
     'ca.cgjennings.apps.arkham.diy.ListItem': ListItem,
-    'ca.cgjennings.apps.arkham.StrangeEons': { getOpenProject: () => openProject, getWindow: () => 'window' },
+    'ca.cgjennings.apps.arkham.StrangeEons': { getOpenProject: () => openProject, getWindow: () => appWindow },
+    'ca.cgjennings.apps.arkham.diy.DIY': DIY,
     'ca.cgjennings.apps.arkham.project.Actions': Actions,
     'ca.cgjennings.ui.theme.Theme': {},
     'java.awt.BorderLayout': Object.assign(class extends Fake {}, { NORTH: 'north', CENTER: 'center' }),
@@ -86,6 +116,7 @@ const types = {
     'javax.swing.JLabel': Fake,
     'javax.swing.JList': JList,
     'javax.swing.JOptionPane': JOptionPane,
+    'javax.swing.JButton': JButton,
     'javax.swing.JPanel': JPanel,
     'javax.swing.JScrollPane': Fake,
     'javax.swing.JSplitPane': Object.assign(class extends Fake {}, { HORIZONTAL_SPLIT: 1 }),
@@ -125,7 +156,7 @@ const ui = {
         setEnabled(v) { this.enabled = v; },
     }; },
 };
-const strings = { string: key => key };
+const strings = { string: (key, ...args) => [key, ...args].join(' ') };
 
 const FillLayout = load('faces/FillLayout.js', {});
 const FaceUtils = load('faces/FaceUtils.js', {
@@ -143,10 +174,25 @@ const EnemyFace = load('faces/EnemyFace.js', {
     'faces/CardFace': CardFace, 'faces/Face': Face, 'faces/FaceUtils': FaceUtils, 'se/imageutils': {}, 'se/strings': strings,
     'se/ui': ui,
 });
+// ResourceKit reads and writes files by name: cards[name] is the card, or an
+// Error to throw
+const files = {};
+const alerts = [];
+const common = {
+    ResourceKit: {
+        written: [],
+        getGameComponentFromFile(file) {
+            if (files[file] instanceof Error) throw files[file];
+            return files[file] ?? null;
+        },
+        writeGameComponentToFile(file, component) { this.written.push(file); },
+    },
+    alert: (message, isError) => alerts.push([message, isError]),
+};
 const ProjectDefaults = load('core/ProjectDefaults.js', { 'se/java': Java });
 const ProjectSettings = load('plugin/ProjectSettings.js', {
     'core/ProjectDefaults': ProjectDefaults, 'faces/EnemyFace': EnemyFace, 'faces/FaceUtils': FaceUtils,
-    'se/java': Java, 'se/strings': strings,
+    'se/common': common, 'se/java': Java, 'se/strings': strings,
 }, { Error: { handleUncaught(ex) { caught.push(ex); } } });
 
 // ProjectDefaults
@@ -307,7 +353,7 @@ test('a saved page removes values set back to the defaults', () => {
     assert.deepEqual(s.values, {});
 });
 
-test('the Settings action applies to a project and saves on OK only', () => {
+test('the Settings action applies to a project and saves on OK', () => {
     ProjectSettings.register();
     ProjectSettings.register();
     assert.equal(registered.length, 1);
@@ -322,20 +368,28 @@ test('the Settings action applies to a project and saves on OK only', () => {
     const s = settings({ 'AHLCG-EnemyFace-RulesSpacing': '2' });
     let writes = 0;
     const project = { getSettings: () => s, writeTaskSettings: () => { writes++; } };
-    JOptionPane.choice = 1;
+    JOptionPane.user = choose(2);
     caught.length = 0;
     assert.equal(action.perform(project, null, null), false);
     assert.equal(writes, 0);
-    JOptionPane.choice = 0;
+    // closed without a choice
+    JOptionPane.user = () => null;
+    assert.equal(action.perform(project, null, null), false);
+    assert.equal(writes, 0);
+    JOptionPane.user = choose(0);
     assert.equal(action.perform(project, null, null), true);
     assert.equal(writes, 1);
     assert.deepEqual(s.values, { 'AHLCG-EnemyFace-RulesSpacing': '2' });
     assert.deepEqual(caught, []);
 
     // the face list beside the pages, the first shown
-    const [, split, title, , , , options] = dialogs[dialogs.length - 1];
-    assert.equal(title, 'AHLCG-ProjectSettings-Title');
-    assert.deepEqual(plain(options), ['ok', 'cancel']);
+    const pane = dialogs[dialogs.length - 1];
+    const [split, type, optionType, icon, options, initial] = pane.args;
+    assert.equal(pane.title, 'AHLCG-ProjectSettings-Title');
+    assert.equal(pane.disposed, true);
+    assert.deepEqual([type, optionType, icon, initial], ['plain', 'default', null, 'ok']);
+    assert.equal(options.length, 3);
+    assert.deepEqual([options[0], options[1].args[0], options[2]], ['ok', 'AHLCG-ProjectSettings-Apply', 'cancel']);
     const [side, cards] = split.args.slice(1);
     const list = side.children.find(([, where]) => where === 'center')[0].args[0];
     assert.deepEqual(plain(list.args[0].children), ['AHLCG-Face-enemy']);
@@ -426,4 +480,106 @@ test('only a face the user chooses takes the project values', () => {
     // unchanged
     handler.applyFaceSettings(c, true);
     assert.deepEqual(plain(handler.faces[0].calls), [[0, true, { from: 'a' }], [0, true, null]]);
+});
+
+// Apply to all cards
+
+const enemySides = { 'Front-template': 'enemy.jp2', 'Back-template': 'other.jp2' };
+
+test('sidesOf finds the sides whose template is the face template', () => {
+    const face = new EnemyFace();
+    assert.deepEqual(plain(ProjectDefaults.sidesOf({ settings: settings() }, face)), []);
+    assert.deepEqual(plain(ProjectDefaults.sidesOf(new DIY(enemySides, 'res://Other/x.js'), face)), []);
+    assert.deepEqual(plain(ProjectDefaults.sidesOf(new DIY(enemySides), face)), [0]);
+    assert.deepEqual(plain(ProjectDefaults.sidesOf(new DIY({ 'Front-template': 'x', 'Back-template': 'enemy.jp2' }), face)), [1]);
+    assert.deepEqual(plain(ProjectDefaults.sidesOf(new DIY({ 'Front-template': 'enemy.jp2', 'Back-template': 'enemy.jp2' }), face)), [0, 1]);
+    assert.deepEqual(plain(ProjectDefaults.sidesOf(new DIY({}), face)), []);
+});
+
+test('applyToCard sets values on the face sides, leaving out blank text', () => {
+    const face = new EnemyFace();
+    const c = new DIY({ 'Front-template': 'x', 'Back-template': 'enemy.jp2', TraitsBack: 'Humanoid.', RulesBack: 'Old.' });
+    const values = { Traits: '  \n ', Rules: 'Hunter.', Flavor: '', RulesSpacing: '0', VictoryFill: '1', Health: '9' };
+    assert.equal(ProjectDefaults.applyToCard(c, face, values), true);
+    const v = c.settings.values;
+    assert.equal(v.TraitsBack, 'Humanoid.');
+    assert.equal(v.RulesBack, 'Hunter.');
+    assert.equal('FlavorBack' in v, false);
+    assert.equal(v.RulesBackSpacing, '0');
+    assert.equal(v.VictoryBackFill, '1');
+    assert.equal('HealthBack' in v, false);
+    assert.equal('Rules' in v, false);
+    assert.equal(ProjectDefaults.applyToCard(new DIY({}), face, values), false);
+});
+
+function member(name, kids) {
+    return {
+        getChildren: () => kids ?? [],
+        isFolder: () => kids != null,
+        getExtension: () => name.split('.').pop(),
+        getFile: () => name,
+    };
+}
+
+test('applyToProject changes enemy cards, open ones in their editors', () => {
+    const editor = (component) => ({
+        component,
+        calls: [],
+        getGameComponent() { return this.component; },
+        populateFieldsFromComponent() { this.calls.push('populate'); },
+        forceRerender() { this.calls.push('rerender'); },
+        setUnsavedChanges(v) { this.calls.push('unsaved ' + v); },
+    });
+    const openEnemy = editor(new DIY(enemySides));
+    const openOther = editor(new DIY({}));
+    appWindow.open = { 'open.eon': [openEnemy], 'openOther.eon': [openOther] };
+    files['enemy.eon'] = new DIY(enemySides);
+    files['other.eon'] = new DIY({});
+    files['bad.eon'] = new Error('bad');
+    common.ResourceKit.written = [];
+    const project = member('project', [
+        member('open.eon'), member('openOther.eon'), member('notes.txt'),
+        member('folder', [member('enemy.eon'), member('other.eon'), member('missing.eon'), member('bad.eon')]),
+    ]);
+    const pages = [{ face: new EnemyFace(), values: () => ({ Rules: 'Hunter.', RulesSpacing: '2' }) }];
+    assert.deepEqual(plain(ProjectSettings.applyToProject(project, pages)), { changed: 2, failed: 2 });
+    assert.equal(openEnemy.component.settings.values.Rules, 'Hunter.');
+    assert.deepEqual(openEnemy.calls, ['populate', 'rerender', 'unsaved true']);
+    assert.deepEqual(openOther.calls, []);
+    assert.equal(files['enemy.eon'].settings.values.RulesSpacing, '2');
+    assert.deepEqual(common.ResourceKit.written, ['enemy.eon']);
+    appWindow.open = {};
+});
+
+test('Apply to all cards saves and applies, leaving the dialog open', () => {
+    const s = settings({ 'AHLCG-EnemyFace-Rules': 'Hunter.' });
+    let writes = 0;
+    files['enemy.eon'] = new DIY(enemySides);
+    files['bad.eon'] = new Error('bad');
+    const project = { ...member('project', [member('enemy.eon'), member('bad.eon')]), getSettings: () => s, writeTaskSettings: () => { writes++; } };
+    alerts.length = 0;
+    const open = [];
+    const clickApply = pane => { pane.args[4][1].click(); open.push(pane.disposed !== true && pane.value === undefined); };
+    // apply, then cancel: saved by apply
+    JOptionPane.user = choose(2, clickApply);
+    assert.equal(registered[0].perform(project, null, null), true);
+    assert.deepEqual(open, [true]);
+    assert.equal(writes, 1);
+    assert.equal(files['enemy.eon'].settings.values.Rules, 'Hunter.');
+    assert.deepEqual(alerts, [['AHLCG-ProjectSettings-Applied 1\nAHLCG-ProjectSettings-ApplyFailed 1', true]]);
+    // apply twice, then OK: saved each time
+    delete files['bad.eon'];
+    project.getChildren = () => [member('enemy.eon')];
+    JOptionPane.user = choose(0, pane => { clickApply(pane); clickApply(pane); });
+    assert.equal(registered[0].perform(project, null, null), true);
+    assert.equal(writes, 4);
+    assert.deepEqual(alerts.slice(1), [['AHLCG-ProjectSettings-Applied 1', false], ['AHLCG-ProjectSettings-Applied 1', false]]);
+    // a failed apply is reported and leaves the dialog open
+    caught.length = 0;
+    project.writeTaskSettings = () => { throw new Error('read only'); };
+    JOptionPane.user = choose(2, clickApply);
+    assert.equal(registered[0].perform(project, null, null), false);
+    assert.equal(caught.length, 1);
+    assert.equal(open[open.length - 1], true);
+    JOptionPane.user = choose(0);
 });

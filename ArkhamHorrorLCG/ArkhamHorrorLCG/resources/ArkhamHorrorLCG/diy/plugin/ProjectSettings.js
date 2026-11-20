@@ -3,15 +3,19 @@
 // lists its navigator, with the selected face's Game Text controls on the
 // right. Values are stored by ProjectDefaults in the project's settings.
 //
+// Apply to all cards also sets the values on the project's cards that show
+// each face, leaving out blank text.
+//
 // Module: returns { register, Faces, Recorder, getValue, setValue, page,
-// edit }.
+// applyToProject, edit }.
 define([
     'core/ProjectDefaults',
     'faces/EnemyFace',
     'faces/FaceUtils',
+    'se/common',
     'se/java',
     'se/strings',
-], function (ProjectDefaults, EnemyFace, FaceUtils, java, strings) {
+], function (ProjectDefaults, EnemyFace, FaceUtils, common, java, strings) {
     // the faces offered: label key and face
     const Faces = [{ label: 'AHLCG-Face-enemy', face: EnemyFace }];
 
@@ -59,8 +63,8 @@ define([
         control.setText(value);
     }
 
-    // a face's page: { panel, save( settings ) }, its controls showing the
-    // project's values, else the face's own
+    // a face's page: { face, panel, values(), save( settings ) }, its
+    // controls showing the project's values, else the face's own
     function page(Face, settings) {
         var face = new Face();
         var recorder = new Recorder();
@@ -79,14 +83,19 @@ define([
         recorder.entries.forEach(function (entry) {
             if (entry.key in values) setValue(entry.control, values[entry.key]);
         });
+        function current() {
+            var result = {};
+            recorder.entries.forEach(function (entry) {
+                result[entry.key] = getValue(entry.control);
+            });
+            return result;
+        }
         return {
+            face: face,
             panel: panel,
+            values: current,
             save: function (target) {
-                var result = {};
-                recorder.entries.forEach(function (entry) {
-                    result[entry.key] = getValue(entry.control);
-                });
-                ProjectDefaults.write(target, face, result);
+                ProjectDefaults.write(target, face, current());
             },
         };
     }
@@ -166,31 +175,126 @@ define([
         return split;
     }
 
-    // shows the dialog for the project; returns whether it saved
+    // the card files under a folder
+    function cardFiles(folder, files) {
+        folder.getChildren().forEach(function (kid) {
+            if (kid.isFolder()) cardFiles(kid, files);
+            else if (String(kid.getExtension()) === 'eon')
+                files.push(kid.getFile());
+        });
+        return files;
+    }
+
+    function applyPages(component, pages) {
+        return pages
+            .map(function (p) {
+                return ProjectDefaults.applyToCard(
+                    component,
+                    p.face,
+                    p.values()
+                );
+            })
+            .some(Boolean);
+    }
+
+    // Sets the pages' values on the project's cards; open editors change in
+    // place, left unsaved. Returns { changed, failed }.
+    function applyToProject(project, pages) {
+        var Eons = java.type('ca.cgjennings.apps.arkham.StrangeEons');
+        var ResourceKit = common.ResourceKit;
+        var result = { changed: 0, failed: 0 };
+        cardFiles(project, []).forEach(function (file) {
+            try {
+                let editors = Eons.getWindow().getEditorsShowingFile(file);
+                if (editors.length > 0) {
+                    let editor = editors[0];
+                    if (!applyPages(editor.getGameComponent(), pages)) return;
+                    editor.populateFieldsFromComponent();
+                    editor.forceRerender();
+                    editor.setUnsavedChanges(true);
+                    result.changed++;
+                    return;
+                }
+                let component = ResourceKit.getGameComponentFromFile(
+                    file,
+                    false
+                );
+                if (component == null) {
+                    result.failed++;
+                    return;
+                }
+                if (!applyPages(component, pages)) return;
+                ResourceKit.writeGameComponentToFile(file, component);
+                result.changed++;
+            } catch (ex) {
+                result.failed++;
+            }
+        });
+        return result;
+    }
+
+    function reportApplied(result) {
+        var message = strings.string(
+            'AHLCG-ProjectSettings-Applied',
+            String(result.changed)
+        );
+        if (result.failed > 0)
+            message +=
+                '\n' +
+                strings.string(
+                    'AHLCG-ProjectSettings-ApplyFailed',
+                    String(result.failed)
+                );
+        common.alert(message, result.failed > 0);
+    }
+
+    // Shows the dialog for the project. OK saves and closes; Apply to all
+    // cards saves and applies, leaving it open. Returns whether it saved.
     function edit(project) {
         var JOptionPane = java.type('javax.swing.JOptionPane');
+        var JButton = java.type('javax.swing.JButton');
         var Eons = java.type('ca.cgjennings.apps.arkham.StrangeEons');
         var settings = project.getSettings();
         var pages = Faces.map(function (entry) {
             return page(entry.face, settings);
         });
-        var options = [strings.string('ok'), strings.string('cancel')];
-        var choice = JOptionPane.showOptionDialog(
-            Eons.getWindow(),
+        var saved = false;
+        function save() {
+            pages.forEach(function (p) {
+                p.save(settings);
+            });
+            project.writeTaskSettings();
+            saved = true;
+        }
+
+        var ok = strings.string('ok');
+        // a button, not a choice, so the pane stays open
+        var apply = new JButton(strings.string('AHLCG-ProjectSettings-Apply'));
+        apply.addActionListener(function () {
+            try {
+                save();
+                reportApplied(applyToProject(project, pages));
+            } catch (ex) {
+                Error.handleUncaught(ex);
+            }
+        });
+        var options = [ok, apply, strings.string('cancel')];
+        var pane = new JOptionPane(
             content(pages),
-            strings.string('AHLCG-ProjectSettings-Title'),
-            JOptionPane.DEFAULT_OPTION,
             JOptionPane.PLAIN_MESSAGE,
+            JOptionPane.DEFAULT_OPTION,
             null,
             options,
-            options[0]
+            ok
         );
-        if (Number(choice) !== 0) return false;
-        pages.forEach(function (p) {
-            p.save(settings);
-        });
-        project.writeTaskSettings();
-        return true;
+        var dialog = pane.createDialog(
+            Eons.getWindow(),
+            strings.string('AHLCG-ProjectSettings-Title')
+        );
+        dialog.setVisible(true);
+        dialog.dispose();
+        if (String(pane.getValue()) === ok) save();
+        return saved;
     }
 
     function action() {
@@ -230,6 +334,7 @@ define([
         getValue: getValue,
         setValue: setValue,
         page: page,
+        applyToProject: applyToProject,
         edit: edit,
     };
 });
