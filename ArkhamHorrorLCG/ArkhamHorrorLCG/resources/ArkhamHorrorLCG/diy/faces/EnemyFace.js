@@ -136,6 +136,20 @@ define([
         return title.length > 0 ? title : String(diy.name);
     };
 
+    // the footer shade multiplies over the art; a weakness or a replaced
+    // template has none
+    EnemyFace.prototype.paintTemplateImage = function (g, sheet, key) {
+        var replaced = CardFace.prototype.paintTemplateImage.call(
+            this,
+            g,
+            sheet,
+            key
+        );
+        if (!replaced && !this.isWeakness())
+            this.paintMultiplied(g, sheet, 'Footer');
+        return replaced;
+    };
+
     EnemyFace.prototype.paintContent = function (
         g,
         diy,

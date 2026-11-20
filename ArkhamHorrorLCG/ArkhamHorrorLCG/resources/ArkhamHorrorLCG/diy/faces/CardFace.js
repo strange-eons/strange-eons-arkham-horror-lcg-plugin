@@ -567,6 +567,20 @@ define([
         return this.subtype === 'None' || this.subtype === 'StoryWeakness';
     };
 
+    // Paints <template>-<name> in its region with a multiply blend, which
+    // darkens what is under it without washing out its color.
+    CardFace.prototype.paintMultiplied = function (g, sheet, name) {
+        var composite = g.getComposite();
+        g.setComposite(
+            Java.type('ca.cgjennings.graphics.composites.BlendMode').Multiply
+        );
+        try {
+            sheet.paintImage(g, this.template + '-' + name);
+        } finally {
+            g.setComposite(composite);
+        }
+    };
+
     // a plug-in image, such as overlays/AHLCG-BasicWeakness.png, in the
     // face's <region>-region, or in area; a <region>-clip-region, where set,
     // clips it

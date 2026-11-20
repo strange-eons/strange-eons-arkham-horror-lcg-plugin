@@ -19,7 +19,7 @@ Face.prototype.key = function (settings, name) {
     const key = this.template + '-' + name;
     return settings.get(key) != null ? key : 'AHLCG-Face-' + name;
 };
-const Java = { type: () => ({ WHITE: 'white', BLACK: 'black' }) };
+const Java = { type: () => ({ WHITE: 'white', BLACK: 'black', Multiply: 'multiply' }) };
 const imageutils = { ImageUtils: { get: key => ({ image: key }) } };
 const CardFace = load('faces/CardFace.js', {
     'faces/Face': Face,
@@ -109,4 +109,25 @@ test('readSubtype sets the story weakness key variant', () => {
         f.readSubtype({ settings: { get: () => subtype } }, 0);
         assert.equal(f.keyVariant, expected, subtype);
     }
+});
+
+test('paintMultiplied paints <template>-<name> with multiply and restores the composite', () => {
+    const calls = [];
+    let composite = 'normal';
+    const g = {
+        getComposite: () => composite,
+        setComposite(c) { composite = c; calls.push(['composite', c]); },
+    };
+    face().paintMultiplied(g, {
+        paintImage(_, key) { calls.push(['paint', key, composite]); },
+    }, 'Footer');
+    assert.deepEqual(calls, [
+        ['composite', 'multiply'],
+        ['paint', 'AHLCG-TestFace-Footer', 'multiply'],
+        ['composite', 'normal'],
+    ]);
+
+    // a failed paint still restores it
+    assert.throws(() => face().paintMultiplied(g, { paintImage() { throw new Error('gone'); } }, 'Footer'));
+    assert.equal(composite, 'normal');
 });

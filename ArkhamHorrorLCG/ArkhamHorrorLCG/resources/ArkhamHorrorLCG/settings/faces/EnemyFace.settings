@@ -2,6 +2,9 @@
 # uses its own template.
 AHLCG-EnemyFace-template = ArkhamHorrorLCG/templates/AHLCG-Enemy.jp2
 AHLCG-EnemyFace-Subtitled-template = ArkhamHorrorLCG/templates/AHLCG-EnemyST.jp2
+# The footer shade, drawn over the art with a multiply blend
+AHLCG-EnemyFace-Footer = ArkhamHorrorLCG/overlays/AHLCG-EnemyFooter.png
+AHLCG-EnemyFace-Footer-region = 0,514,411,47
 
 AHLCG-EnemyFace-Portrait-portrait-template = ArkhamHorrorLCG/default-portraits/DefaultTexture.jp2
 AHLCG-EnemyFace-Portrait-portrait-pany = 0
