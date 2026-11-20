@@ -131,7 +131,7 @@ strangeEonsRenderTest {
         "face-switch", "encounter-tab", "plugin-object", "preferences", "user-icons", "plugin-script",
     )
     scriptCheck("repaint", "repaint")
-    scriptCheck("painting", "sides", "mirror-edges", "fill-parts")
+    scriptCheck("painting", "sides", "mirror-edges", "anchor-victory")
     scriptCheck("conversion", "conversion")
     scriptCheck("compose", "compose")
 }
