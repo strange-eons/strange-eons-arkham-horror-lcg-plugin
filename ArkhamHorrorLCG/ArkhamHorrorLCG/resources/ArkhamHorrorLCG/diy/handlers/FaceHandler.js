@@ -22,6 +22,7 @@
 //
 // Module: returns FaceHandler.
 define([
+    'core/ProjectDefaults',
     'handlers/CardVersion',
     'handlers/Collector',
     'handlers/TemplateReplacement',
@@ -34,6 +35,7 @@ define([
     'se/java',
     'require',
 ], function (
+    ProjectDefaults,
     CardVersion,
     Collector,
     TemplateReplacement,
@@ -406,7 +408,12 @@ define([
 
     FaceHandler.prototype.setDefaults = function (diy) {
         for (let i = 0; i < this.faces.length; i++) {
-            this.faces[i].setDefaults(diy, i, false);
+            this.faces[i].setDefaults(
+                diy,
+                i,
+                false,
+                ProjectDefaults.forNewCard(this.faces[i])
+            );
         }
 
         this.setCardDefaults(diy);

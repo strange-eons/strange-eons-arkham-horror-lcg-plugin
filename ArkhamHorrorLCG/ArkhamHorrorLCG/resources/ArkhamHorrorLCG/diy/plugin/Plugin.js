@@ -6,10 +6,18 @@
 define([
     'core/PluginInfo',
     'plugin/GameObject',
+    'plugin/ProjectSettings',
     'prefs/Category',
     'se/common',
     'se/extension',
-], function (PluginInfo, GameObject, PreferenceCategory, common, extension) {
+], function (
+    PluginInfo,
+    GameObject,
+    ProjectSettings,
+    PreferenceCategory,
+    common,
+    extension
+) {
     // settings files under ArkhamHorrorLCG/settings, in load order
     const SettingsFiles = [
         'AHLCG-Game',
@@ -104,6 +112,7 @@ define([
         extension.ConversionMap.add(
             'ArkhamHorrorLCG/ArkhamHorrorLCG.conversionmap'
         );
+        ProjectSettings.register();
     }
 
     return {
