@@ -174,6 +174,42 @@ define([
         }
     }
 
+    // whether a card of the class can dream; a weakness or reward can't
+    function canDream(cardClass) {
+        return !isWeakness(cardClass) && cardClass !== 'Reward';
+    }
+
+    // Whether the card dreams: a crystal ball showing its level replaces its
+    // cost and level.
+    function isDreaming(diy, suffix, cardClass) {
+        return get(diy, 'Dreaming', suffix) === '1' && canDream(cardClass);
+    }
+
+    // the crystal ball for the level; no level shows none
+    function paintDreaming(face, g, diy, sheet, suffix) {
+        var level = get(diy, 'Level', suffix);
+        if (!/^[0-5]$/.test(level)) level = '0';
+        sheet.paintImage(
+            g,
+            image('overlays/AHLCG-Dreaming-' + level + '.png'),
+            region(face, diy, 'Dreaming')
+        );
+    }
+
+    // The dreaming box is off for a class that can't dream; the cost field
+    // is off while the card dreams.
+    function linkDreaming(face, bindings, classList, dreaming, cost) {
+        function update() {
+            var allowed = canDream(String(classList.getSelectedItem()));
+            dreaming.setEnabled(allowed);
+            cost.setEnabled(!(allowed && dreaming.isSelected()));
+        }
+        classList.addActionListener(update);
+        dreaming.addActionListener(update);
+        face.addPopulateListener(bindings, update);
+        update();
+    }
+
     // the unleveled circle of weakness art; skill art's shared one
     function paintWeaknessLevel(face, g, diy, sheet, skillCircle) {
         paintLevelCircle(
@@ -432,6 +468,10 @@ define([
         paintClassSymbols: paintClassSymbols,
         paintLevel: paintLevel,
         paintWeaknessLevel: paintWeaknessLevel,
+        canDream: canDream,
+        isDreaming: isDreaming,
+        paintDreaming: paintDreaming,
+        linkDreaming: linkDreaming,
         paintCircle: paintCircle,
         paintWeaknessSubtype: paintWeaknessSubtype,
         readKeyVariant: readKeyVariant,

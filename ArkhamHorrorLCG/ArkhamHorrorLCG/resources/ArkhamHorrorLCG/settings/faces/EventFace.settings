@@ -39,6 +39,8 @@ AHLCG-EventFace-Label-region = 21,62,36,14
 AHLCG-EventFace-Label-style = FAMILY: {Eons.namedObjects.AHLCGObject.typeFamily}; SIZE: {Eons.namedObjects.AHLCGObject.smallLabelSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.smallLabelWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.smallLabelWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.smallLabelTracking}; FOREGROUND: #000000
 AHLCG-EventFace-Level-region = 14,35,49,23
 AHLCG-EventFace-LevelCircle-region = 10,5,58,58
+# a dreaming card's crystal ball, in place of the cost and level
+AHLCG-EventFace-Dreaming-region = 5,6,69,72
 AHLCG-EventFace-M-template = ArkhamHorrorLCG/templates/AHLCG-Event-M.jp2
 AHLCG-EventFace-N-template = ArkhamHorrorLCG/templates/AHLCG-Event-N.jp2
 AHLCG-EventFace-Name-region = 40,304,297,29

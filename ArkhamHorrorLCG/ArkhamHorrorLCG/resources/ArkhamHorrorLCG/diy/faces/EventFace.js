@@ -57,6 +57,7 @@ define([
             CardClass2: 'None',
             CardClass3: 'None',
             ResourceCost: '0',
+            Dreaming: '0',
             Level: '0',
         };
         for (let i = 1; i <= SkillCount; i++) values['Skill' + i] = 'None';
@@ -67,6 +68,13 @@ define([
         var o = FaceUtils.plugin();
         var face = this;
         var panel = new ui.Grid();
+        var cost = control('ResourceCost', new ui.textField('0', 10));
+        var dreaming = control(
+            'Dreaming',
+            new ui.checkBox(strings.string('AHLCG-Dreaming'), false, null)
+        );
+        var classBox = list('CardClass', o.comboClassesBWS);
+        PlayerCard.linkDreaming(face, bindings, classBox, dreaming, cost);
 
         function control(name, created) {
             face.bind(bindings, faceIndex, name, created);
@@ -83,7 +91,7 @@ define([
         panel.place(
             strings.string('AHLCG-Class1'),
             'align right',
-            list('CardClass', o.comboClassesBWS),
+            classBox,
             cell,
             icon(1),
             'align right, gapx 10',
@@ -107,7 +115,7 @@ define([
             'wrap, ' + cell,
             strings.string('AHLCG-Cost'),
             'align right',
-            control('ResourceCost', new ui.textField('0', 10)),
+            cost,
             cell,
             icon(4),
             'align right, gapx 10',
@@ -120,7 +128,9 @@ define([
             icon(5),
             'align right, gapx 10',
             list('Skill5', o.comboSkills),
-            cell
+            'wrap, ' + cell,
+            dreaming,
+            'skip 1, wrap'
         );
         return [{ panel: panel, title: strings.string('AHLCG-BasicData') }];
     };
@@ -223,7 +233,10 @@ define([
             lift = 2;
         this.paintName(g, diy, sheet, boxes.name, lift);
 
+        var dreaming = PlayerCard.isDreaming(diy, suffix, cardClass);
         if (weakness) PlayerCard.paintWeaknessLevel(this, g, diy, sheet);
+        else if (dreaming)
+            PlayerCard.paintDreaming(this, g, diy, sheet, suffix);
         else
             PlayerCard.paintLevel(
                 this,
@@ -237,14 +250,15 @@ define([
         PlayerCard.paintCircle(this, g, diy, sheet, cardClass, Circles);
         PlayerCard.paintWeaknessSubtype(this, g, diy, boxes.subtype, cardClass);
 
-        PlayerCard.paintCost(
-            this,
-            g,
-            diy,
-            sheet,
-            suffix,
-            art === 'W' || PlayerCard.hasLevelCircle(art)
-        );
+        if (!dreaming)
+            PlayerCard.paintCost(
+                this,
+                g,
+                diy,
+                sheet,
+                suffix,
+                art === 'W' || PlayerCard.hasLevelCircle(art)
+            );
         PlayerCard.paintSkillIcons(
             this,
             g,

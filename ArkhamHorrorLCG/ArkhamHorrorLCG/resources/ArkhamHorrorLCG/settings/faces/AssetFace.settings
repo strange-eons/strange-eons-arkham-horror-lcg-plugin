@@ -37,6 +37,8 @@ AHLCG-AssetFace-Label-region = 20,62,38,14
 AHLCG-AssetFace-Label-style = FAMILY: {Eons.namedObjects.AHLCGObject.typeFamily}; SIZE: {Eons.namedObjects.AHLCGObject.smallLabelSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.smallLabelWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.smallLabelWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.smallLabelTracking}; FOREGROUND: #000000
 AHLCG-AssetFace-Level-region = 14,36,48,23
 AHLCG-AssetFace-LevelCircle-region = 8,7,60,58
+# a dreaming card's crystal ball, in place of the cost and level
+AHLCG-AssetFace-Dreaming-region = 5,6,69,72
 AHLCG-AssetFace-M-template = ArkhamHorrorLCG/templates/AHLCG-Asset-M.jp2
 AHLCG-AssetFace-MS-template = ArkhamHorrorLCG/templates/AHLCG-Asset-MS.jp2
 AHLCG-AssetFace-N-template = ArkhamHorrorLCG/templates/AHLCG-Asset-N.jp2
