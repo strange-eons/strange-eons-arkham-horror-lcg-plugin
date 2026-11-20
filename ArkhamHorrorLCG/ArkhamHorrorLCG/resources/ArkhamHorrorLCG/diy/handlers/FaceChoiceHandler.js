@@ -15,13 +15,12 @@
 //
 // Module: returns FaceChoiceHandler.
 define([
-    'core/ProjectDefaults',
     'handlers/FaceHandler',
     'se/strings',
     'se/ui',
     'se/java',
     'require',
-], function (ProjectDefaults, FaceHandler, strings, ui, Java, require) {
+], function (FaceHandler, strings, ui, Java, require) {
     const ListItem = Java.type('ca.cgjennings.apps.arkham.diy.ListItem');
     function FaceChoiceHandler(config) {
         this.choices = config.choices;
@@ -70,25 +69,16 @@ define([
             : this.defaults[faceIndex];
     };
 
-    // Applies the chosen faces: faces, missing defaults and templates. With
-    // chosen, a face the user just picked also takes the project's defaults.
-    FaceChoiceHandler.prototype.applyFaceSettings = function (diy, chosen) {
+    // Applies the chosen faces: faces, missing defaults and templates.
+    FaceChoiceHandler.prototype.applyFaceSettings = function (diy) {
         for (let i = 0; i < this.faces.length; i++) {
             let id = this.getFaceSetting(diy, i);
-            let changed = this.faceIds[i] !== id;
-            if (changed) {
+            if (this.faceIds[i] !== id) {
                 this.faces[i].clearType(diy, i);
                 this.setFace(i, new (this.findChoice(i, id).face)());
                 this.faceIds[i] = id;
             }
-            this.faces[i].setDefaults(
-                diy,
-                i,
-                true,
-                changed && chosen
-                    ? ProjectDefaults.forNewCard(this.faces[i])
-                    : null
-            );
+            this.faces[i].setDefaults(diy, i, true);
         }
         this.setFaceTemplates(diy);
         this.updateCollector(diy);
@@ -143,7 +133,7 @@ define([
 
                     handler.changeFace(diy, faceIndex, function () {
                         diy.settings.set(handler.faceSettings[faceIndex], id);
-                        handler.applyFaceSettings(diy, true);
+                        handler.applyFaceSettings(diy);
                     });
                 } catch (ex) {
                     Error.handleUncaught(ex);

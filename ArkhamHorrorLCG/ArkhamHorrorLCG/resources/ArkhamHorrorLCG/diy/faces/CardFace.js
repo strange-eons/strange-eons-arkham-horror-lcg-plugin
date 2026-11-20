@@ -11,7 +11,7 @@
 // card that isn't a weakness, or a story weakness, shows the encounter set.
 //
 // Subclasses set labelKey, and may set hasSubtitle, hasUnique, subtypes,
-// weaknessOverlays, parts, fillsParts and projectDefaults, and override templateKey, bodyShape and
+// weaknessOverlays, parts and fillsParts, and override templateKey, bodyShape and
 // paintContent.
 //
 // Module: returns CardFace.
@@ -74,9 +74,6 @@ define([
     CardFace.prototype.bodyParts = null;
     // each part can fill the body's leftover space (see FillLayout)
     CardFace.prototype.fillsParts = false;
-    // a project can choose the Game Text values of new cards (see
-    // ProjectDefaults)
-    CardFace.prototype.projectDefaults = false;
     CardFace.prototype.parts = [
         'Traits',
         'Keywords',
@@ -90,44 +87,8 @@ define([
         return {};
     };
 
-    // the Game Text keys, without the side's suffix, and their values on a
-    // new card
-    CardFace.prototype.textDefaults = function () {
-        var values = {};
-        var parts = this.parts;
-        parts.forEach(function (part) {
-            values[part] = '';
-        });
-        (this.spacedParts || parts.slice(0, -1)).forEach(function (part) {
-            values[part + 'Spacing'] = '0';
-        });
-        if (this.fillsParts) {
-            parts.forEach(function (part) {
-                values[part + 'Fill'] = '0';
-                values[part + 'FillAlignment'] = 'Top';
-            });
-        }
-        return values;
-    };
-
-    // the setting of a Game Text key on a side: <part><suffix><rest>
-    CardFace.prototype.textKey = function (key, faceIndex) {
-        var suffix = this.suffix(faceIndex);
-        var part = this.parts
-            .filter(function (p) {
-                return key.indexOf(p) === 0;
-            })
-            .sort(function (a, b) {
-                return b.length - a.length;
-            })[0];
-        return part + suffix + key.substring(part.length);
-    };
-
-    // project, if given, holds Game Text values, keyed as by textDefaults,
-    // that replace those still at the face's defaults
-    CardFace.prototype.setDefaults = function (diy, faceIndex, keep, project) {
+    CardFace.prototype.setDefaults = function (diy, faceIndex, keep) {
         var values = this.defaultValues(diy, faceIndex);
-        var text = this.textDefaults();
         if (this.subtypes != null) {
             let key = 'Subtype' + this.suffix(faceIndex);
             if (!keep || String(diy.settings.get(key)) === 'None')
@@ -137,30 +98,28 @@ define([
         if (this.hasSubtitle) values.Subtitle = '';
         values.Artist = '';
         this.parts.forEach(function (part) {
-            if (!(part in values)) values[part] = text[part];
+            if (!(part in values)) values[part] = '';
         });
         // the front's title is the component name
         if (faceIndex !== 0) values.Title = '';
         this.setValues(diy, faceIndex, keep, values);
 
-        // keyed <part><suffix>Spacing and <part><suffix>Fill..., as legacy
-        // cards save them
-        var layout = {};
-        Object.keys(text).forEach(function (key) {
-            if (!(key in values))
-                layout[this.textKey(key, faceIndex)] = text[key];
-        }, this);
-        this.setSettings(diy, keep, layout);
+        // keyed <part><suffix>Spacing, as legacy cards save them
+        var suffix = this.suffix(faceIndex);
+        var spacing = {};
+        (this.spacedParts || this.parts.slice(0, -1)).forEach(function (part) {
+            spacing[part + suffix + 'Spacing'] = '0';
+        });
+        this.setSettings(diy, keep, spacing);
 
-        if (project == null) return;
-        Object.keys(project).forEach(function (key) {
-            if (!(key in text)) return;
-            let setting = this.textKey(key, faceIndex);
-            let value = diy.settings.get(setting);
-            let current = key in values ? values[key] : text[key];
-            if (value == null || String(value) === current)
-                diy.settings.set(setting, project[key]);
-        }, this);
+        if (this.fillsParts) {
+            let fill = {};
+            this.parts.forEach(function (part) {
+                fill[part + suffix + 'Fill'] = '0';
+                fill[part + suffix + 'FillAlignment'] = 'Top';
+            });
+            this.setSettings(diy, keep, fill);
+        }
     };
 
     CardFace.prototype.clearType = function (diy, faceIndex) {

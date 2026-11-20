@@ -23,7 +23,6 @@ define([
     EnemyFace.prototype.hasSubtitle = true;
     EnemyFace.prototype.fillReturnEncounterIcon = true;
     EnemyFace.prototype.fillsParts = true;
-    EnemyFace.prototype.projectDefaults = true;
     EnemyFace.prototype.subtypes = [
         'None',
         'BasicWeakness',
