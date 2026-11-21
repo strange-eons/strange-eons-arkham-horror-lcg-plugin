@@ -222,7 +222,16 @@ test('the project choice reads and writes AHLCG-FillFlavor', () => {
     assert.equal(s.values['AHLCG-FillFlavor'], '0');
 });
 
-test('a project opened without the choice: on without cards, off with them', () => {
+test('setEnabled writes the choice only when it changes', () => {
+    const s = settings();
+    ProjectDefaults.setEnabled(s, false);
+    assert.deepEqual(s.values, {});
+    ProjectDefaults.setEnabled(s, true);
+    ProjectDefaults.setEnabled(s, true);
+    assert.deepEqual(s.values, { 'AHLCG-FillFlavor': '1' });
+});
+
+test('a project opened without the choice: on without cards, left alone with them', () => {
     function project(values, kids) {
         const s = settings(values);
         return { ...member('project', kids), settings: s, writes: 0, getSettings: () => s, writeTaskSettings() { this.writes++; } };
@@ -232,8 +241,9 @@ test('a project opened without the choice: on without cards, off with them', () 
     assert.equal(p.settings.values['AHLCG-FillFlavor'], '1');
     assert.equal(p.writes, 1);
     p = project({}, [member('art', [member('deep', [member('card.eon')])])]);
-    assert.equal(ProjectDefaults.initialize(p), true);
-    assert.equal(p.settings.values['AHLCG-FillFlavor'], '0');
+    assert.equal(ProjectDefaults.initialize(p), false);
+    assert.deepEqual(p.settings.values, {});
+    assert.equal(p.writes, 0);
     p = project({ 'AHLCG-FillFlavor': '1' }, [member('card.eon')]);
     assert.equal(ProjectDefaults.initialize(p), false);
     assert.equal(p.settings.values['AHLCG-FillFlavor'], '1');
@@ -289,8 +299,11 @@ test('the Layout page shows, saves and applies the project choice', () => {
     const check = page.panel.placed[0];
     assert.equal(check.label, 'AHLCG-FillFlavor');
     assert.equal(check.selected, true);
-    const target = settings();
     check.setSelected(false);
+    const untouched = settings();
+    page.save(untouched);
+    assert.deepEqual(untouched.values, {});
+    const target = settings({ 'AHLCG-FillFlavor': '1' });
     page.save(target);
     assert.deepEqual(target.values, { 'AHLCG-FillFlavor': '0' });
     const card = new DIY({ 'Front-template': 'enemy.jp2', 'Back-template': 'enemy.jp2' });
