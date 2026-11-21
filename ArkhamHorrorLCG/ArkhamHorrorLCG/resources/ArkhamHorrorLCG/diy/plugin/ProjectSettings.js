@@ -9,14 +9,20 @@
 // Module: returns { register, Faces, layoutPage, applyToProject, edit }.
 define([
     'core/ProjectDefaults',
-    'faces/EnemyFace',
+    'handlers/FlexibleFaces',
     'se/common',
     'se/java',
     'se/strings',
     'se/ui',
-], function (ProjectDefaults, EnemyFace, common, java, strings, ui) {
+], function (ProjectDefaults, FlexibleFaces, common, java, strings, ui) {
     // the faces whose cards follow the layout choice
-    const Faces = [EnemyFace];
+    const Faces = FlexibleFaces.choices
+        .map(function (choice) {
+            return choice.face;
+        })
+        .filter(function (Face) {
+            return Face.prototype.fillsFlavor();
+        });
 
     // { label, panel, save( settings ), applyToCard( component ) }: the
     // project's layout choice
@@ -25,7 +31,7 @@ define([
             return new Face();
         });
         var check = new ui.checkBox(
-            strings.string('AHLCG-AnchorVictory'),
+            strings.string('AHLCG-FillFlavor'),
             ProjectDefaults.enabled(settings)
         );
         var panel = new ui.Grid();

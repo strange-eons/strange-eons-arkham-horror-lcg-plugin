@@ -89,6 +89,7 @@ Face.prototype.setValues = function (card, side, keep, values) {
 Face.prototype.setSettings = function () {};
 const CardFace = load('faces/CardFace.js', {
     'faces/Face': Face,
+    'faces/FillFlavor': { KEY: 'FillFlavor' },
     'ui/SubtypeBinding': SubtypeBinding,
     'se/ui': { ...ui, comboBox: function () { this.value = 'None'; } },
     'se/java': { type: () => ({ WHITE: {}, BLACK: {} }) },

@@ -57,6 +57,12 @@ define([
     // with art also sets $Artist<suffix>
     Face.prototype.portraits = [];
 
+    // whether FillFlavor<suffix> centers the face's flavor text (see
+    // FillFlavor)
+    Face.prototype.fillsFlavor = function () {
+        return false;
+    };
+
     Face.prototype.suffix = function (faceIndex) {
         return Suffixes[faceIndex];
     };

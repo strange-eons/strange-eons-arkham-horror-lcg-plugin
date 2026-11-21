@@ -17,7 +17,7 @@ function load(name, modules, globals = {}) {
     return result;
 }
 
-const AnchorLayout = load('faces/AnchorLayout.js', {});
+const FillFlavor = load('faces/FillFlavor.js', {});
 
 function settings(values) {
     return { get: (key, fallback) => (key in values ? values[key] : fallback) };
@@ -30,19 +30,19 @@ function plain(list) {
     return JSON.parse(JSON.stringify(list));
 }
 
-test('anchors is null unless the side anchors and has flavor or victory', () => {
-    assert.equal(AnchorLayout.anchors(settings(TEXT), PARTS, ''), null);
-    assert.equal(AnchorLayout.anchors(settings({ ...TEXT, AnchorVictory: '0' }), PARTS, ''), null);
-    assert.equal(AnchorLayout.anchors(settings({ Rules: 'x', AnchorVictory: '1' }), PARTS, ''), null);
+test('fills is null unless the side fills and has flavor or victory', () => {
+    assert.equal(FillFlavor.fills(settings(TEXT), PARTS, ''), null);
+    assert.equal(FillFlavor.fills(settings({ ...TEXT, FillFlavor: '0' }), PARTS, ''), null);
+    assert.equal(FillFlavor.fills(settings({ Rules: 'x', FillFlavor: '1' }), PARTS, ''), null);
     // a face without the parts
-    assert.equal(AnchorLayout.anchors(settings({ ...TEXT, AnchorVictory: '1' }), ['Rules'], ''), null);
+    assert.equal(FillFlavor.fills(settings({ ...TEXT, FillFlavor: '1' }), ['Rules'], ''), null);
 });
 
-test('anchors centers flavor, else puts victory at the bottom, by side', () => {
-    assert.deepEqual(plain(AnchorLayout.anchors(settings({ ...TEXT, AnchorVictory: 'yes' }), PARTS, '')), [
+test('fills centers flavor, else puts victory at the bottom, by side', () => {
+    assert.deepEqual(plain(FillFlavor.fills(settings({ ...TEXT, FillFlavor: 'yes' }), PARTS, '')), [
         { part: 'Flavor', alignment: 'Middle' },
     ]);
-    assert.deepEqual(plain(AnchorLayout.anchors(settings({ VictoryBack: 'V', AnchorVictoryBack: '1', AnchorVictory: '0' }), PARTS, 'Back')), [
+    assert.deepEqual(plain(FillFlavor.fills(settings({ VictoryBack: 'V', FillFlavorBack: '1', FillFlavor: '0' }), PARTS, 'Back')), [
         { part: 'Victory', alignment: 'Bottom' },
     ]);
 });
@@ -52,7 +52,7 @@ test('pads share the total equally, above and below by alignment', () => {
         { part: 'Flavor', alignment: 'Middle' },
         { part: 'Victory', alignment: 'Bottom' },
     ];
-    assert.deepEqual(plain(AnchorLayout.pads(list, 20)), {
+    assert.deepEqual(plain(FillFlavor.pads(list, 20)), {
         Flavor: { before: 5, after: 5 },
         Victory: { before: 10, after: 0 },
     });
@@ -60,29 +60,29 @@ test('pads share the total equally, above and below by alignment', () => {
 
 test('solve finds the padding that fills the height', () => {
     // 2 pixels per point over 40
-    const total = AnchorLayout.solve(p => 40 + 2 * p, 100);
+    const total = FillFlavor.solve(p => 40 + 2 * p, 100);
     assert.ok(total <= 30 && total > 29.5, String(total));
 });
 
 test('solve never overflows, keeping the largest total that fits', () => {
     // a line rewraps at 20 points, adding 15
     const measure = p => 40 + 2 * p + (p >= 20 ? 15 : 0);
-    const total = AnchorLayout.solve(measure, 100);
+    const total = FillFlavor.solve(measure, 100);
     assert.ok(measure(total) <= 100, String(total));
     assert.ok(total >= 19, String(total));
 });
 
 test('solve is null when the text overflows unpadded, and 0 when padding adds nothing', () => {
-    assert.equal(AnchorLayout.solve(() => 120, 100), null);
-    assert.equal(AnchorLayout.solve(() => 60, 100), 0);
+    assert.equal(FillFlavor.solve(() => 120, 100), null);
+    assert.equal(FillFlavor.solve(() => 60, 100), 0);
 });
 
 test('isOn accepts check box and yes/no values', () => {
-    for (const v of ['1', 'yes', 'true', 'Yes']) assert.equal(AnchorLayout.isOn(v), true, v);
-    for (const v of ['0', 'no', '', null]) assert.equal(AnchorLayout.isOn(v), false, String(v));
+    for (const v of ['1', 'yes', 'true', 'Yes']) assert.equal(FillFlavor.isOn(v), true, v);
+    for (const v of ['0', 'no', '', null]) assert.equal(FillFlavor.isOn(v), false, String(v));
 });
 
-// CardFace.paintAnchoredBody with a box 10 high per line, plus 1 per point of
+// CardFace.paintFilledBody with a box 10 high per line, plus 1 per point of
 // pads; partsMarkup records the pads it is given
 
 function Face() {}
@@ -101,7 +101,7 @@ const markup = { FIT_NONE: 'none', FIT_SCALE_TEXT: 'scale' };
 const CardFace = load('faces/CardFace.js', {
     'faces/Face': Face,
     'faces/FaceUtils': FaceUtils,
-    'faces/AnchorLayout': AnchorLayout,
+    'faces/FillFlavor': FillFlavor,
     'se/markup': markup,
     'se/java': Java,
 }, { Java });
@@ -122,11 +122,11 @@ function box() {
 }
 const REGION = { x: 0, y: 100, width: 50, height: 100 };
 
-test('paintAnchoredBody draws one box with the pads that fill the region', () => {
+test('paintFilledBody draws one box with the pads that fill the region', () => {
     const b = box();
     padsSeen.length = 0;
-    const s = settings({ ...TEXT, AnchorVictory: '1' });
-    assert.equal(new CardFace().paintAnchoredBody(null, { settings: s }, b, REGION, PARTS, '', null), true);
+    const s = settings({ ...TEXT, FillFlavor: '1' });
+    assert.equal(new CardFace().paintFilledBody(null, { settings: s }, b, REGION, PARTS, '', null), true);
     // 4 lines, 60 points of pads
     assert.equal(b.draws.length, 1);
     const [text, region, fitting] = b.draws[0];
@@ -141,11 +141,11 @@ test('paintAnchoredBody draws one box with the pads that fill the region', () =>
     assert.equal(b.fitting, 'scale');
 });
 
-test('paintAnchoredBody draws nothing unanchored, or when text overflows', () => {
+test('paintFilledBody draws nothing unfilled, or when text overflows', () => {
     const b = box();
-    assert.equal(new CardFace().paintAnchoredBody(null, { settings: settings(TEXT) }, b, REGION, PARTS, '', null), false);
-    const s = settings({ ...TEXT, Rules: 'a\nb\nc\nd\ne\nf\ng\nh\ni', AnchorVictory: '1' });
-    assert.equal(new CardFace().paintAnchoredBody(null, { settings: s }, b, REGION, PARTS, '', null), false);
+    assert.equal(new CardFace().paintFilledBody(null, { settings: settings(TEXT) }, b, REGION, PARTS, '', null), false);
+    const s = settings({ ...TEXT, Rules: 'a\nb\nc\nd\ne\nf\ng\nh\ni', FillFlavor: '1' });
+    assert.equal(new CardFace().paintFilledBody(null, { settings: s }, b, REGION, PARTS, '', null), false);
     assert.deepEqual(b.draws, []);
     assert.equal(b.markupText, 'all');
     assert.equal(b.fitting, 'scale');
@@ -163,7 +163,7 @@ function recorder(values = {}) {
         },
     };
 }
-function anchoringFace() {
+function fillingFace() {
     const face = new CardFace();
     face.suffix = i => ['', 'Back'][i];
     face.setValues = () => {};
@@ -176,32 +176,44 @@ function anchoringFace() {
     return face;
 }
 
-test('setDefaults adds the anchor key only for a face that anchors', () => {
-    const face = anchoringFace();
+test('a face fills flavor when its body draws Flavor', () => {
+    const face = new CardFace();
+    assert.equal(face.fillsFlavor(), true);
+    face.parts = ['Rules', 'Victory'];
+    assert.equal(face.fillsFlavor(), false);
+    face.bodyParts = ['Rules', 'Flavor'];
+    assert.equal(face.fillsFlavor(), true);
+    face.parts = ['Rules', 'Flavor'];
+    face.bodyParts = ['Rules'];
+    assert.equal(face.fillsFlavor(), false);
+});
+
+test('setDefaults adds the fill key only for a face that fills flavor', () => {
+    const face = fillingFace();
+    face.parts = ['Rules', 'Victory'];
     let r = recorder();
     face.setDefaults(r, 1, false);
-    assert.equal('AnchorVictoryBack' in r.set, false);
-    face.anchorsVictory = true;
+    assert.equal('FillFlavorBack' in r.set, false);
+    delete face.parts;
     r = recorder();
     face.setDefaults(r, 1, false);
-    assert.equal(r.set.AnchorVictoryBack, '0');
+    assert.equal(r.set.FillFlavorBack, '0');
 });
 
 test('a new or newly chosen side takes the project choice; a set one keeps its own', () => {
-    const face = anchoringFace();
-    face.anchorsVictory = true;
+    const face = fillingFace();
     let r = recorder();
-    face.setDefaults(r, 0, false, { AnchorVictory: '1' });
-    assert.equal(r.set.AnchorVictory, '1');
-    r = recorder({ AnchorVictoryBack: '1' });
-    face.setDefaults(r, 1, true, { AnchorVictory: '0' });
-    assert.equal(r.set.AnchorVictoryBack, '1');
-    r = recorder({ AnchorVictory: '0' });
-    face.setDefaults(r, 0, true, { AnchorVictory: '1' });
-    assert.equal(r.set.AnchorVictory, '1');
+    face.setDefaults(r, 0, false, { FillFlavor: '1' });
+    assert.equal(r.set.FillFlavor, '1');
+    r = recorder({ FillFlavorBack: '1' });
+    face.setDefaults(r, 1, true, { FillFlavor: '0' });
+    assert.equal(r.set.FillFlavorBack, '1');
+    r = recorder({ FillFlavor: '0' });
+    face.setDefaults(r, 0, true, { FillFlavor: '1' });
+    assert.equal(r.set.FillFlavor, '1');
     r = recorder();
     face.setDefaults(r, 0, false, {});
-    assert.equal(r.set.AnchorVictory, '0');
+    assert.equal(r.set.FillFlavor, '0');
 });
 
 // FaceUtils.partsMarkup with pads; spacers show as [points]

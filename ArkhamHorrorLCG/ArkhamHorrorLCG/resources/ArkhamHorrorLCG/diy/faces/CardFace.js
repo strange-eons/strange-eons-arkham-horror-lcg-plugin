@@ -11,7 +11,7 @@
 // card that isn't a weakness, or a story weakness, shows the encounter set.
 //
 // Subclasses set labelKey, and may set hasSubtitle, hasUnique, subtypes,
-// weaknessOverlays, parts and anchorsVictory, and override templateKey, bodyShape and
+// weaknessOverlays and parts, and override templateKey, bodyShape and
 // paintContent.
 //
 // Module: returns CardFace.
@@ -19,7 +19,7 @@ define([
     'faces/CollectorInfo',
     'faces/Face',
     'faces/FaceUtils',
-    'faces/AnchorLayout',
+    'faces/FillFlavor',
     'faces/PortraitArt',
     'ui/SubtypeBinding',
     'se/imageutils',
@@ -31,7 +31,7 @@ define([
     CollectorInfo,
     Face,
     FaceUtils,
-    AnchorLayout,
+    FillFlavor,
     PortraitArt,
     SubtypeBinding,
     imageutils,
@@ -72,10 +72,6 @@ define([
     CardFace.prototype.spacedParts = null;
     // the parts drawn in the body, if not all of them
     CardFace.prototype.bodyParts = null;
-    // AnchorVictory<suffix> puts Victory at the body's bottom and centers
-    // Flavor (see AnchorLayout); a project chooses it for new cards (see
-    // ProjectDefaults)
-    CardFace.prototype.anchorsVictory = false;
     CardFace.prototype.parts = [
         'Traits',
         'Keywords',
@@ -84,12 +80,19 @@ define([
         'Victory',
     ];
 
+    // FillFlavor<suffix> centers Flavor and puts Victory at the body's bottom
+    // (see FillFlavor) on a face that draws Flavor in its body; a project
+    // chooses it for new cards (see ProjectDefaults)
+    CardFace.prototype.fillsFlavor = function () {
+        return (this.bodyParts || this.parts).indexOf('Flavor') >= 0;
+    };
+
     // the face's own values, set with the parts and their spacing
     CardFace.prototype.defaultValues = function (diy, faceIndex) {
         return {};
     };
 
-    // project, if given, holds the project's AnchorVictory, which a side
+    // project, if given, holds the project's FillFlavor, which a side
     // still at the default takes
     CardFace.prototype.setDefaults = function (diy, faceIndex, keep, project) {
         var values = this.defaultValues(diy, faceIndex);
@@ -116,17 +119,17 @@ define([
         });
         this.setSettings(diy, keep, spacing);
 
-        if (!this.anchorsVictory) return;
-        var key = AnchorLayout.KEY + suffix;
-        var anchor = {};
-        anchor[key] = '0';
-        this.setSettings(diy, keep, anchor);
+        if (!this.fillsFlavor()) return;
+        var key = FillFlavor.KEY + suffix;
+        var fill = {};
+        fill[key] = '0';
+        this.setSettings(diy, keep, fill);
         if (
             project != null &&
-            AnchorLayout.KEY in project &&
+            FillFlavor.KEY in project &&
             String(diy.settings.get(key)) === '0'
         )
-            diy.settings.set(key, project[AnchorLayout.KEY]);
+            diy.settings.set(key, project[FillFlavor.KEY]);
     };
 
     CardFace.prototype.clearType = function (diy, faceIndex) {
@@ -475,17 +478,17 @@ define([
         );
         markup.updateNameTags(box, diy);
         if (
-            this.anchorsVictory &&
-            this.paintAnchoredBody(g, diy, box, region, parts, suffix, formats)
+            this.fillsFlavor() &&
+            this.paintFilledBody(g, diy, box, region, parts, suffix, formats)
         )
             return;
         box.draw(g, region);
     };
 
-    // Draws the parts with Victory at the bottom and Flavor centered, as
-    // space in one box, when the side anchors and the text fits unscaled;
+    // Draws the parts with Flavor centered and Victory at the bottom, as
+    // space in one box, when the side fills flavor and the text fits unscaled;
     // otherwise draws nothing and returns false.
-    CardFace.prototype.paintAnchoredBody = function (
+    CardFace.prototype.paintFilledBody = function (
         g,
         diy,
         box,
@@ -494,8 +497,8 @@ define([
         suffix,
         formats
     ) {
-        var anchors = AnchorLayout.anchors(diy.settings, parts, suffix);
-        if (anchors == null) return false;
+        var fills = FillFlavor.fills(diy.settings, parts, suffix);
+        if (fills == null) return false;
 
         var full = box.markupText;
         function text(total) {
@@ -504,12 +507,12 @@ define([
                 parts,
                 suffix,
                 formats,
-                AnchorLayout.pads(anchors, total)
+                FillFlavor.pads(fills, total)
             );
         }
 
         box.setTextFitting(markup.FIT_NONE);
-        var total = AnchorLayout.solve(function (total) {
+        var total = FillFlavor.solve(function (total) {
             box.markupText = text(total);
             return box.measure(g, region);
         }, region.height);

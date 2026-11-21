@@ -177,8 +177,9 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
     // Game text fields for parts (Traits, Keywords, Header, Rules, Victory or
     // another name), keyed <part><partSuffix> and bound by face, with spacing
     // spinners between them, keyed <part><partSuffix><face suffix>Spacing as
-    // legacy cards save them. A face with anchorsVictory ends with a check
-    // box for AnchorVictory<face suffix>.
+    // legacy cards save them. A face that fills flavor ends with a check
+    // box for FillFlavor<face suffix>, which mentions victory text only when
+    // the body draws it.
     function createTextPanel(
         face,
         bindings,
@@ -277,18 +278,23 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
             }
         }
 
-        if (face.anchorsVictory) {
-            let anchor = new ui.checkBox(
-                strings.string('AHLCG-AnchorVictory'),
+        if (face.fillsFlavor()) {
+            let body = face.bodyParts || face.parts;
+            let check = new ui.checkBox(
+                strings.string(
+                    body.indexOf('Victory') >= 0
+                        ? 'AHLCG-FillFlavor'
+                        : 'AHLCG-FillFlavorOnly'
+                ),
                 false
             );
             face.bindKey(
                 bindings,
                 faceIndex,
-                'AnchorVictory' + face.suffix(faceIndex),
-                anchor
+                'FillFlavor' + face.suffix(faceIndex),
+                check
             );
-            panel.place(anchor, 'skip, span, wrap');
+            panel.place(check, 'skip, span, wrap');
         }
 
         return panel;

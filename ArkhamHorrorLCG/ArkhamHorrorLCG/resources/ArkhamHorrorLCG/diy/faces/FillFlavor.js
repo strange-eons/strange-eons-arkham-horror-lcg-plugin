@@ -1,11 +1,11 @@
-// Victory text at the bottom of the body and flavor text centered in the
-// space the other parts leave, as space in the body's markup, when
-// AnchorVictory<suffix> is set: Flavor takes the leftover space evenly above
-// and below; without Flavor, Victory takes it above.
+// Flavor text centered in the space the other parts leave, and victory text
+// at the bottom of the body, as space in the body's markup, when
+// FillFlavor<suffix> is set: Flavor takes the leftover space evenly above and
+// below; without Flavor, Victory takes it above.
 //
-// Module: returns { KEY, isOn, anchors, pads, solve }.
+// Module: returns { KEY, isOn, fills, pads, solve }.
 define(function () {
-    const KEY = 'AnchorVictory';
+    const KEY = 'FillFlavor';
     const ABOVE = { Middle: 0.5, Bottom: 1 };
 
     function isOn(value) {
@@ -20,8 +20,8 @@ define(function () {
     }
 
     // the part that takes the leftover space, as [ { part, alignment } ], or
-    // null when the side doesn't anchor or has neither part
-    function anchors(settings, parts, suffix) {
+    // null when the side doesn't fill or has neither part
+    function fills(settings, parts, suffix) {
         if (!isOn(settings.get(KEY + suffix, '0'))) return null;
         if (hasText(settings, parts, 'Flavor', suffix))
             return [{ part: 'Flavor', alignment: 'Middle' }];
@@ -73,7 +73,7 @@ define(function () {
     return {
         KEY: KEY,
         isOn: isOn,
-        anchors: anchors,
+        fills: fills,
         pads: pads,
         solve: solve,
     };

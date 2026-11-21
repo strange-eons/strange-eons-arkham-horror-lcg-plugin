@@ -1,15 +1,15 @@
-// The project's layout choice for new cards: AHLCG-AnchorVictory in its
-// settings, which faces with anchorsVictory copy to AnchorVictory<suffix>
-// (see AnchorLayout). A project opened without it gets it: on for a project
+// The project's layout choice for new cards: AHLCG-FillFlavor in its
+// settings, which faces that fill flavor copy to FillFlavor<suffix>
+// (see FillFlavor). A project opened without it gets it: on for a project
 // with no cards yet, off for one that has some.
 //
 // Module: returns { KEY, enabled, setEnabled, initialize, forNewCard,
 // sidesOf, applyToCard }.
-define(['faces/AnchorLayout', 'se/java'], function (AnchorLayout, java) {
-    const KEY = 'AHLCG-AnchorVictory';
+define(['faces/FillFlavor', 'se/java'], function (FillFlavor, java) {
+    const KEY = 'AHLCG-FillFlavor';
 
     function enabled(settings) {
-        return AnchorLayout.isOn(settings.get(KEY, '0'));
+        return FillFlavor.isOn(settings.get(KEY, '0'));
     }
 
     function setEnabled(settings, on) {
@@ -35,12 +35,12 @@ define(['faces/AnchorLayout', 'se/java'], function (AnchorLayout, java) {
 
     // the open project's values for a face new to a card, or null
     function forNewCard(face) {
-        if (!face.anchorsVictory) return null;
+        if (!face.fillsFlavor()) return null;
         var Eons = java.type('ca.cgjennings.apps.arkham.StrangeEons');
         var project = Eons.getOpenProject();
         if (project == null) return null;
         var values = {};
-        values[AnchorLayout.KEY] = enabled(project.getSettings()) ? '1' : '0';
+        values[FillFlavor.KEY] = enabled(project.getSettings()) ? '1' : '0';
         return values;
     }
 
@@ -64,13 +64,13 @@ define(['faces/AnchorLayout', 'se/java'], function (AnchorLayout, java) {
             });
     }
 
-    // Sets AnchorVictory<suffix> on each side of the card that shows the
+    // Sets FillFlavor<suffix> on each side of the card that shows the
     // face. Returns whether it did.
     function applyToCard(component, face, on) {
         var sides = sidesOf(component, face);
         sides.forEach(function (faceIndex) {
             component.settings.set(
-                AnchorLayout.KEY + face.suffix(faceIndex),
+                FillFlavor.KEY + face.suffix(faceIndex),
                 on ? '1' : '0'
             );
         });

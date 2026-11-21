@@ -163,7 +163,7 @@ const ui = {
 };
 const strings = { string: (key, ...args) => [key, ...args].join(' ') };
 
-const AnchorLayout = load('faces/AnchorLayout.js', {});
+const FillFlavor = load('faces/FillFlavor.js', {});
 const FaceUtils = load('faces/FaceUtils.js', {
     'se/common': {}, 'se/java': Java, 'se/strings': strings, 'se/ui': ui,
 });
@@ -171,7 +171,7 @@ const Face = load('faces/Face.js', {
     'faces/FaceUtils': FaceUtils, 'se/common': {}, 'se/markup': {}, 'se/strings': strings, 'se/ui': ui, 'se/java': Java,
 });
 const CardFace = load('faces/CardFace.js', {
-    'faces/CollectorInfo': {}, 'faces/Face': Face, 'faces/FaceUtils': FaceUtils, 'faces/AnchorLayout': AnchorLayout,
+    'faces/CollectorInfo': {}, 'faces/Face': Face, 'faces/FaceUtils': FaceUtils, 'faces/FillFlavor': FillFlavor,
     'faces/PortraitArt': {}, 'ui/SubtypeBinding': {}, 'se/imageutils': {}, 'se/markup': {}, 'se/strings': strings,
     'se/ui': ui, 'se/java': Java,
 });
@@ -179,6 +179,11 @@ const EnemyFace = load('faces/EnemyFace.js', {
     'faces/CardFace': CardFace, 'faces/Face': Face, 'faces/FaceUtils': FaceUtils, 'se/imageutils': {}, 'se/strings': strings,
     'se/ui': ui,
 });
+// a face whose body has no Flavor
+function RulesFace() { CardFace.call(this); }
+RulesFace.prototype = Object.create(CardFace.prototype);
+RulesFace.prototype.parts = ['Rules', 'Victory'];
+const rulesOnly = () => new RulesFace();
 // ResourceKit reads and writes files by name: cards[name] is the card, or an
 // Error to throw
 const files = {};
@@ -194,22 +199,27 @@ const common = {
     },
     alert: (message, isError) => alerts.push([message, isError]),
 };
-const ProjectDefaults = load('core/ProjectDefaults.js', { 'faces/AnchorLayout': AnchorLayout, 'se/java': Java });
+const ProjectDefaults = load('core/ProjectDefaults.js', { 'faces/FillFlavor': FillFlavor, 'se/java': Java });
 const ProjectSettings = load('plugin/ProjectSettings.js', {
-    'core/ProjectDefaults': ProjectDefaults, 'faces/EnemyFace': EnemyFace,
+    'core/ProjectDefaults': ProjectDefaults,
+    'handlers/FlexibleFaces': { choices: [{ face: Face }, { face: EnemyFace }, { face: RulesFace }] },
     'se/common': common, 'se/java': Java, 'se/strings': strings, 'se/ui': ui,
 }, { Error: { handleUncaught(ex) { caught.push(ex); } } });
 
+test('the layout choice covers the faces that fill flavor', () => {
+    assert.deepEqual(ProjectSettings.Faces, [EnemyFace]);
+});
+
 // ProjectDefaults
 
-test('the project choice reads and writes AHLCG-AnchorVictory', () => {
+test('the project choice reads and writes AHLCG-FillFlavor', () => {
     const s = settings();
     assert.equal(ProjectDefaults.enabled(s), false);
     ProjectDefaults.setEnabled(s, true);
-    assert.deepEqual(s.values, { 'AHLCG-AnchorVictory': '1' });
+    assert.deepEqual(s.values, { 'AHLCG-FillFlavor': '1' });
     assert.equal(ProjectDefaults.enabled(s), true);
     ProjectDefaults.setEnabled(s, false);
-    assert.equal(s.values['AHLCG-AnchorVictory'], '0');
+    assert.equal(s.values['AHLCG-FillFlavor'], '0');
 });
 
 test('a project opened without the choice: on without cards, off with them', () => {
@@ -219,45 +229,52 @@ test('a project opened without the choice: on without cards, off with them', () 
     }
     let p = project({}, [member('notes.txt'), member('art', [member('a.png')])]);
     assert.equal(ProjectDefaults.initialize(p), true);
-    assert.equal(p.settings.values['AHLCG-AnchorVictory'], '1');
+    assert.equal(p.settings.values['AHLCG-FillFlavor'], '1');
     assert.equal(p.writes, 1);
     p = project({}, [member('art', [member('deep', [member('card.eon')])])]);
     assert.equal(ProjectDefaults.initialize(p), true);
-    assert.equal(p.settings.values['AHLCG-AnchorVictory'], '0');
-    p = project({ 'AHLCG-AnchorVictory': '1' }, [member('card.eon')]);
+    assert.equal(p.settings.values['AHLCG-FillFlavor'], '0');
+    p = project({ 'AHLCG-FillFlavor': '1' }, [member('card.eon')]);
     assert.equal(ProjectDefaults.initialize(p), false);
-    assert.equal(p.settings.values['AHLCG-AnchorVictory'], '1');
+    assert.equal(p.settings.values['AHLCG-FillFlavor'], '1');
     assert.equal(p.writes, 0);
 });
 
-test('forNewCard gives an anchoring face the open project choice', () => {
+test('forNewCard gives a face that fills flavor the open project choice', () => {
     openProject = null;
     assert.equal(ProjectDefaults.forNewCard(new EnemyFace()), null);
-    openProject = { getSettings: () => settings({ 'AHLCG-AnchorVictory': '1' }) };
-    assert.deepEqual(plain(ProjectDefaults.forNewCard(new EnemyFace())), { AnchorVictory: '1' });
-    assert.equal(ProjectDefaults.forNewCard(new CardFace()), null);
+    openProject = { getSettings: () => settings({ 'AHLCG-FillFlavor': '1' }) };
+    assert.deepEqual(plain(ProjectDefaults.forNewCard(new EnemyFace())), { FillFlavor: '1' });
+    assert.equal(ProjectDefaults.forNewCard(rulesOnly()), null);
+    assert.deepEqual(plain(ProjectDefaults.forNewCard(new CardFace())), { FillFlavor: '1' });
     openProject = { getSettings: () => settings() };
-    assert.deepEqual(plain(ProjectDefaults.forNewCard(new EnemyFace())), { AnchorVictory: '0' });
+    assert.deepEqual(plain(ProjectDefaults.forNewCard(new EnemyFace())), { FillFlavor: '0' });
     openProject = null;
 });
 
 test('an enemy new to a card takes the project choice on its side', () => {
     const c = { settings: settings() };
-    new EnemyFace().setDefaults(c, 1, false, { AnchorVictory: '1' });
-    assert.equal(c.settings.values.AnchorVictoryBack, '1');
-    assert.equal('AnchorVictory' in c.settings.values, false);
+    new EnemyFace().setDefaults(c, 1, false, { FillFlavor: '1' });
+    assert.equal(c.settings.values.FillFlavorBack, '1');
+    assert.equal('FillFlavor' in c.settings.values, false);
 });
 
 // the dialog
 
-test('the Game Text tab of an anchoring face ends with its check box', () => {
+test('the Game Text tab of a face that fills flavor ends with its check box', () => {
     const recorder = { entries: [], add(key, control) { this.entries.push([key, control]); } };
     const face = new EnemyFace();
     const panel = FaceUtils.createTextPanel(face, recorder, 1, face.parts, '', 6);
     const [key, check] = recorder.entries[recorder.entries.length - 1];
-    assert.equal(key, 'AnchorVictoryBack');
-    assert.equal(check.label, 'AHLCG-AnchorVictory');
+    assert.equal(key, 'FillFlavorBack');
+    assert.equal(check.label, 'AHLCG-FillFlavor');
     assert.equal(panel.placed[panel.placed.length - 2], check);
+    const location = new CardFace();
+    location.suffix = () => '';
+    location.bodyParts = ['Rules', 'Flavor'];
+    const r1 = { entries: [], add(key, control) { this.entries.push([key, control]); } };
+    FaceUtils.createTextPanel(location, r1, 0, ['Rules', 'Flavor', 'Victory'], '', 6);
+    assert.equal(r1.entries[r1.entries.length - 1][1].label, 'AHLCG-FillFlavorOnly');
     const plainFace = new CardFace();
     plainFace.parts = ['Rules'];
     const r2 = { entries: [], add(key, control) { this.entries.push([key, control]); } };
@@ -266,20 +283,20 @@ test('the Game Text tab of an anchoring face ends with its check box', () => {
 });
 
 test('the Layout page shows, saves and applies the project choice', () => {
-    const page = ProjectSettings.layoutPage(settings({ 'AHLCG-AnchorVictory': '1' }));
+    const page = ProjectSettings.layoutPage(settings({ 'AHLCG-FillFlavor': '1' }));
     assert.equal(page.label, 'AHLCG-ProjectSettings-Layout');
     assert.equal(page.panel.title, 'AHLCG-ProjectSettings-Layout');
     const check = page.panel.placed[0];
-    assert.equal(check.label, 'AHLCG-AnchorVictory');
+    assert.equal(check.label, 'AHLCG-FillFlavor');
     assert.equal(check.selected, true);
     const target = settings();
     check.setSelected(false);
     page.save(target);
-    assert.deepEqual(target.values, { 'AHLCG-AnchorVictory': '0' });
+    assert.deepEqual(target.values, { 'AHLCG-FillFlavor': '0' });
     const card = new DIY({ 'Front-template': 'enemy.jp2', 'Back-template': 'enemy.jp2' });
     assert.equal(page.applyToCard(card), true);
-    assert.equal(card.settings.values.AnchorVictory, '0');
-    assert.equal(card.settings.values.AnchorVictoryBack, '0');
+    assert.equal(card.settings.values.FillFlavor, '0');
+    assert.equal(card.settings.values.FillFlavorBack, '0');
     assert.equal(page.applyToCard(new DIY({})), false);
     assert.equal(ProjectSettings.layoutPage(settings()).panel.placed[0].selected, false);
 });
@@ -296,7 +313,7 @@ test('the Settings action applies to a project and saves on OK', () => {
     assert.equal(action.appliesTo('p', null, 'm'), false);
     assert.equal(action.appliesTo(null, null, null), false);
 
-    const s = settings({ 'AHLCG-AnchorVictory': '1' });
+    const s = settings({ 'AHLCG-FillFlavor': '1' });
     let writes = 0;
     const project = { getSettings: () => s, writeTaskSettings: () => { writes++; } };
     JOptionPane.user = choose(2);
@@ -310,7 +327,7 @@ test('the Settings action applies to a project and saves on OK', () => {
     JOptionPane.user = choose(0);
     assert.equal(action.perform(project, null, null), true);
     assert.equal(writes, 1);
-    assert.deepEqual(s.values, { 'AHLCG-AnchorVictory': '1' });
+    assert.deepEqual(s.values, { 'AHLCG-FillFlavor': '1' });
     assert.deepEqual(caught, []);
 
     // the face list beside the pages, the first shown
@@ -443,8 +460,8 @@ test('applyToCard sets the choice on the face sides', () => {
     const face = new EnemyFace();
     const c = new DIY({ 'Front-template': 'x', 'Back-template': 'enemy.jp2' });
     assert.equal(ProjectDefaults.applyToCard(c, face, true), true);
-    assert.equal(c.settings.values.AnchorVictoryBack, '1');
-    assert.equal('AnchorVictory' in c.settings.values, false);
+    assert.equal(c.settings.values.FillFlavorBack, '1');
+    assert.equal('FillFlavor' in c.settings.values, false);
     assert.equal(ProjectDefaults.applyToCard(new DIY({}), face, true), false);
 });
 
@@ -479,16 +496,16 @@ test('applyToProject changes enemy cards, open ones in their editors', () => {
     ]);
     const pages = [{ applyToCard: c => ProjectDefaults.applyToCard(c, new EnemyFace(), true) }];
     assert.deepEqual(plain(ProjectSettings.applyToProject(project, pages)), { changed: 2, failed: 2 });
-    assert.equal(openEnemy.component.settings.values.AnchorVictory, '1');
+    assert.equal(openEnemy.component.settings.values.FillFlavor, '1');
     assert.deepEqual(openEnemy.calls, ['populate', 'rerender', 'unsaved true']);
     assert.deepEqual(openOther.calls, []);
-    assert.equal(files['enemy.eon'].settings.values.AnchorVictory, '1');
+    assert.equal(files['enemy.eon'].settings.values.FillFlavor, '1');
     assert.deepEqual(common.ResourceKit.written, ['enemy.eon']);
     appWindow.open = {};
 });
 
 test('Apply to all cards saves and applies, leaving the dialog open', () => {
-    const s = settings({ 'AHLCG-AnchorVictory': '1' });
+    const s = settings({ 'AHLCG-FillFlavor': '1' });
     let writes = 0;
     files['enemy.eon'] = new DIY(enemySides);
     files['bad.eon'] = new Error('bad');
@@ -501,7 +518,7 @@ test('Apply to all cards saves and applies, leaving the dialog open', () => {
     assert.equal(registered[0].perform(project, null, null), true);
     assert.deepEqual(open, [true]);
     assert.equal(writes, 1);
-    assert.equal(files['enemy.eon'].settings.values.AnchorVictory, '1');
+    assert.equal(files['enemy.eon'].settings.values.FillFlavor, '1');
     assert.deepEqual(alerts, [['AHLCG-ProjectSettings-Applied 1\nAHLCG-ProjectSettings-ApplyFailed 1', true]]);
     // apply twice, then OK: saved each time
     delete files['bad.eon'];
