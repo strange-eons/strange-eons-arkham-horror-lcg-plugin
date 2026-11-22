@@ -101,6 +101,25 @@ class DIY {
     getBackTemplateKey() { return 'Back'; }
 }
 const caught = [];
+// the event dispatch thread: edt says whether the caller is on it
+const SwingUtilities = {
+    edt: true,
+    waits: 0,
+    isEventDispatchThread() { return this.edt; },
+    invokeAndWait(fn) { this.waits++; const was = this.edt; this.edt = true; try { fn(); } finally { this.edt = was; } },
+};
+// runs the operation off the event dispatch thread, recording its calls
+class BusyDialog {
+    constructor(title, operation) {
+        BusyDialog.calls.push(['title', title]);
+        SwingUtilities.edt = false;
+        try { operation(); } finally { SwingUtilities.edt = true; }
+    }
+    static maximumProgress(n) { BusyDialog.calls.push(['max', n]); }
+    static currentProgress(n) { BusyDialog.calls.push(['current', n]); }
+    static statusText(s) { BusyDialog.calls.push(['status', s]); }
+}
+BusyDialog.calls = [];
 class ListItem {
     constructor(id, label) { this.id = id; this.label = label; }
     toString() { return this.id; }
@@ -109,6 +128,8 @@ const types = {
     'ca.cgjennings.apps.arkham.diy.ListItem': ListItem,
     'ca.cgjennings.apps.arkham.StrangeEons': { getOpenProject: () => openProject, getWindow: () => appWindow },
     'ca.cgjennings.apps.arkham.diy.DIY': DIY,
+    'ca.cgjennings.apps.arkham.BusyDialog': BusyDialog,
+    'javax.swing.SwingUtilities': SwingUtilities,
     'ca.cgjennings.apps.arkham.project.Actions': Actions,
     'ca.cgjennings.ui.theme.Theme': {},
     'java.awt.BorderLayout': Object.assign(class extends Fake {}, { NORTH: 'north', CENTER: 'center', WEST: 'west' }),
@@ -466,6 +487,7 @@ function member(name, kids) {
         getChildren: () => kids ?? [],
         isFolder: () => kids != null,
         getExtension: () => name.split('.').pop(),
+        getName: () => name,
         getFile: () => name,
     };
 }
@@ -500,6 +522,32 @@ test('applyToProject changes enemy cards, open ones in their editors', () => {
     appWindow.open = {};
 });
 
+test('applyToProject reports progress and edits editors on the event thread', () => {
+    const calls = [];
+    const component = new DIY(enemySides);
+    const editor = {
+        getGameComponent: () => component,
+        populateFieldsFromComponent() { calls.push(['populate', SwingUtilities.edt]); },
+        forceRerender() {},
+        setUnsavedChanges() {},
+    };
+    appWindow.open = { 'open.eon': [editor] };
+    files['enemy.eon'] = new DIY(enemySides);
+    const project = member('project', [member('open.eon'), member('folder', [member('enemy.eon')])]);
+    const pages = [{ applyToCard: c => ProjectDefaults.applyToCard(c, new EnemyFace(), true) }];
+    const progress = (done, total, name) => calls.push([done, total, name]);
+    SwingUtilities.edt = false;
+    SwingUtilities.waits = 0;
+    try {
+        assert.deepEqual(plain(ProjectSettings.applyToProject(project, pages, progress)), { changed: 2, failed: 0 });
+    } finally {
+        SwingUtilities.edt = true;
+    }
+    assert.deepEqual(calls, [[0, 2, 'open.eon'], ['populate', true], [1, 2, 'enemy.eon']]);
+    assert.equal(SwingUtilities.waits, 2);
+    appWindow.open = {};
+});
+
 test('Apply to all cards saves and applies, leaving the dialog open', () => {
     const s = settings({ 'AHLCG-FillFlavor': '1' });
     let writes = 0;
@@ -510,9 +558,15 @@ test('Apply to all cards saves and applies, leaving the dialog open', () => {
     const open = [];
     const clickApply = pane => { pane.args[4][1].click(); open.push(pane.disposed !== true && pane.value === undefined); };
     // apply, then cancel: saved by apply
+    BusyDialog.calls = [];
     JOptionPane.user = choose(2, clickApply);
     assert.equal(registered[0].perform(project, null, null), true);
     assert.deepEqual(open, [true]);
+    assert.deepEqual(BusyDialog.calls, [
+        ['title', 'AHLCG-ProjectSettings-Applying'],
+        ['max', 2], ['current', 0], ['status', 'enemy.eon'],
+        ['current', 1], ['status', 'bad.eon'],
+    ]);
     assert.equal(writes, 1);
     assert.equal(files['enemy.eon'].settings.values.FillFlavor, '1');
     assert.deepEqual(alerts, [['AHLCG-ProjectSettings-Applied 1\nAHLCG-ProjectSettings-ApplyFailed 1', true]]);
@@ -530,6 +584,14 @@ test('Apply to all cards saves and applies, leaving the dialog open', () => {
     assert.equal(registered[0].perform(project, null, null), false);
     assert.equal(caught.length, 1);
     assert.equal(open[open.length - 1], true);
+    // an error while applying is reported after the busy dialog closes
+    caught.length = 0;
+    project.writeTaskSettings = () => {};
+    project.getChildren = () => { throw new Error('unreadable'); };
+    JOptionPane.user = choose(2, clickApply);
+    assert.equal(registered[0].perform(project, null, null), true);
+    assert.deepEqual(caught.map(ex => ex.message), ['unreadable']);
+    assert.equal(SwingUtilities.edt, true);
     JOptionPane.user = choose(0);
 });
 

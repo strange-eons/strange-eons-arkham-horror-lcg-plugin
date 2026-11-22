@@ -151,14 +151,13 @@ define([
         return root;
     }
 
-    // the card files under a folder
-    function cardFiles(folder, files) {
+    // the card file members under a folder
+    function cardMembers(folder, members) {
         folder.getChildren().forEach(function (kid) {
-            if (kid.isFolder()) cardFiles(kid, files);
-            else if (String(kid.getExtension()) === 'eon')
-                files.push(kid.getFile());
+            if (kid.isFolder()) cardMembers(kid, members);
+            else if (String(kid.getExtension()) === 'eon') members.push(kid);
         });
-        return files;
+        return members;
     }
 
     function applyPages(component, pages) {
@@ -169,22 +168,49 @@ define([
             .some(Boolean);
     }
 
-    // Sets the pages' choices on the project's cards; open editors change in
-    // place, left unsaved. Returns { changed, failed }.
-    function applyToProject(project, pages) {
+    // calls fn on the event dispatch thread, waiting for it; returns its
+    // result
+    function onEdt(fn) {
+        var SwingUtilities = java.type('javax.swing.SwingUtilities');
+        if (SwingUtilities.isEventDispatchThread()) return fn();
+        var result;
+        SwingUtilities.invokeAndWait(function () {
+            result = fn();
+        });
+        return result;
+    }
+
+    // Applies the pages to the card in the editor showing the file, left
+    // unsaved. Returns null when no editor shows it, else whether it changed.
+    function applyInEditor(file, pages) {
         var Eons = java.type('ca.cgjennings.apps.arkham.StrangeEons');
+        var editors = Eons.getWindow().getEditorsShowingFile(file);
+        if (editors.length === 0) return null;
+        var editor = editors[0];
+        if (!applyPages(editor.getGameComponent(), pages)) return false;
+        editor.populateFieldsFromComponent();
+        editor.forceRerender();
+        editor.setUnsavedChanges(true);
+        return true;
+    }
+
+    // Sets the pages' choices on the project's cards; open editors change in
+    // place, left unsaved. progress( done, total, name ), if given, is called
+    // before each card. Returns { changed, failed }.
+    function applyToProject(project, pages, progress) {
         var ResourceKit = common.ResourceKit;
         var result = { changed: 0, failed: 0 };
-        cardFiles(project, []).forEach(function (file) {
+        var members = cardMembers(project, []);
+        members.forEach(function (member, index) {
+            if (progress)
+                progress(index, members.length, String(member.getName()));
+            let file = member.getFile();
             try {
-                let editors = Eons.getWindow().getEditorsShowingFile(file);
-                if (editors.length > 0) {
-                    let editor = editors[0];
-                    if (!applyPages(editor.getGameComponent(), pages)) return;
-                    editor.populateFieldsFromComponent();
-                    editor.forceRerender();
-                    editor.setUnsavedChanges(true);
-                    result.changed++;
+                let edited = onEdt(function () {
+                    return applyInEditor(file, pages);
+                });
+                if (edited !== null) {
+                    if (edited) result.changed++;
                     return;
                 }
                 let component = ResourceKit.getGameComponentFromFile(
@@ -202,6 +228,31 @@ define([
                 result.failed++;
             }
         });
+        return result;
+    }
+
+    // applyToProject off the event dispatch thread, behind a busy dialog
+    // that shows its progress; returns when it is done
+    function applyWithProgress(project, pages) {
+        var BusyDialog = java.type('ca.cgjennings.apps.arkham.BusyDialog');
+        var result = null;
+        var error = null;
+        function progress(done, total, name) {
+            if (done === 0) BusyDialog.maximumProgress(total);
+            BusyDialog.currentProgress(done);
+            BusyDialog.statusText(name);
+        }
+        new BusyDialog(
+            strings.string('AHLCG-ProjectSettings-Applying'),
+            function () {
+                try {
+                    result = applyToProject(project, pages, progress);
+                } catch (ex) {
+                    error = ex;
+                }
+            }
+        );
+        if (error !== null) throw error;
         return result;
     }
 
@@ -246,7 +297,7 @@ define([
         apply.addActionListener(function () {
             try {
                 save();
-                reportApplied(applyToProject(project, pages));
+                reportApplied(applyWithProgress(project, pages));
             } catch (ex) {
                 Error.handleUncaught(ex);
             }
