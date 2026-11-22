@@ -212,42 +212,23 @@ test('the layout choice covers the faces that fill flavor', () => {
 
 // ProjectDefaults
 
-test('the project choice reads and writes AHLCG-FillFlavor', () => {
+test('the project choice reads and writes AHLCG-FillFlavor, on without it', () => {
     const s = settings();
-    assert.equal(ProjectDefaults.enabled(s), false);
-    ProjectDefaults.setEnabled(s, true);
-    assert.deepEqual(s.values, { 'AHLCG-FillFlavor': '1' });
     assert.equal(ProjectDefaults.enabled(s), true);
     ProjectDefaults.setEnabled(s, false);
-    assert.equal(s.values['AHLCG-FillFlavor'], '0');
+    assert.deepEqual(s.values, { 'AHLCG-FillFlavor': '0' });
+    assert.equal(ProjectDefaults.enabled(s), false);
+    ProjectDefaults.setEnabled(s, true);
+    assert.equal(s.values['AHLCG-FillFlavor'], '1');
 });
 
 test('setEnabled writes the choice only when it changes', () => {
     const s = settings();
-    ProjectDefaults.setEnabled(s, false);
+    ProjectDefaults.setEnabled(s, true);
     assert.deepEqual(s.values, {});
-    ProjectDefaults.setEnabled(s, true);
-    ProjectDefaults.setEnabled(s, true);
-    assert.deepEqual(s.values, { 'AHLCG-FillFlavor': '1' });
-});
-
-test('a project opened without the choice: on without cards, left alone with them', () => {
-    function project(values, kids) {
-        const s = settings(values);
-        return { ...member('project', kids), settings: s, writes: 0, getSettings: () => s, writeTaskSettings() { this.writes++; } };
-    }
-    let p = project({}, [member('notes.txt'), member('art', [member('a.png')])]);
-    assert.equal(ProjectDefaults.initialize(p), true);
-    assert.equal(p.settings.values['AHLCG-FillFlavor'], '1');
-    assert.equal(p.writes, 1);
-    p = project({}, [member('art', [member('deep', [member('card.eon')])])]);
-    assert.equal(ProjectDefaults.initialize(p), false);
-    assert.deepEqual(p.settings.values, {});
-    assert.equal(p.writes, 0);
-    p = project({ 'AHLCG-FillFlavor': '1' }, [member('card.eon')]);
-    assert.equal(ProjectDefaults.initialize(p), false);
-    assert.equal(p.settings.values['AHLCG-FillFlavor'], '1');
-    assert.equal(p.writes, 0);
+    ProjectDefaults.setEnabled(s, false);
+    ProjectDefaults.setEnabled(s, false);
+    assert.deepEqual(s.values, { 'AHLCG-FillFlavor': '0' });
 });
 
 test('forNewCard gives a face that fills flavor the open project choice', () => {
@@ -258,6 +239,8 @@ test('forNewCard gives a face that fills flavor the open project choice', () => 
     assert.equal(ProjectDefaults.forNewCard(rulesOnly()), null);
     assert.deepEqual(plain(ProjectDefaults.forNewCard(new CardFace())), { FillFlavor: '1' });
     openProject = { getSettings: () => settings() };
+    assert.deepEqual(plain(ProjectDefaults.forNewCard(new EnemyFace())), { FillFlavor: '1' });
+    openProject = { getSettings: () => settings({ 'AHLCG-FillFlavor': '0' }) };
     assert.deepEqual(plain(ProjectDefaults.forNewCard(new EnemyFace())), { FillFlavor: '0' });
     openProject = null;
 });
@@ -300,9 +283,9 @@ test('the Layout page shows, saves and applies the project choice', () => {
     assert.equal(check.label, 'AHLCG-FillFlavor');
     assert.equal(check.selected, true);
     check.setSelected(false);
-    const untouched = settings();
+    const untouched = settings({ 'AHLCG-FillFlavor': '0' });
     page.save(untouched);
-    assert.deepEqual(untouched.values, {});
+    assert.deepEqual(untouched.values, { 'AHLCG-FillFlavor': '0' });
     const target = settings({ 'AHLCG-FillFlavor': '1' });
     page.save(target);
     assert.deepEqual(target.values, { 'AHLCG-FillFlavor': '0' });
@@ -311,7 +294,7 @@ test('the Layout page shows, saves and applies the project choice', () => {
     assert.equal(card.settings.values.FillFlavor, '0');
     assert.equal(card.settings.values.FillFlavorBack, '0');
     assert.equal(page.applyToCard(new DIY({})), false);
-    assert.equal(ProjectSettings.layoutPage(settings()).panel.placed[0].selected, false);
+    assert.equal(ProjectSettings.layoutPage(settings()).panel.placed[0].selected, true);
 });
 
 test('the Settings action applies to a project and saves on OK', () => {

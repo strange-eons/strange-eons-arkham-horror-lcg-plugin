@@ -6,7 +6,6 @@
 define([
     'core/PluginInfo',
     'plugin/GameObject',
-    'plugin/ProjectEvents',
     'plugin/ProjectSettings',
     'prefs/Category',
     'se/common',
@@ -14,7 +13,6 @@ define([
 ], function (
     PluginInfo,
     GameObject,
-    ProjectEvents,
     ProjectSettings,
     PreferenceCategory,
     common,
@@ -115,7 +113,6 @@ define([
             'ArkhamHorrorLCG/ArkhamHorrorLCG.conversionmap'
         );
         ProjectSettings.register();
-        ProjectEvents.register();
     }
 
     return {

@@ -1,39 +1,20 @@
 // The project's layout choice for new cards: AHLCG-FillFlavor in its
 // settings, which faces that fill flavor copy to FillFlavor<suffix>
-// (see FillFlavor); without it, off. A project opened without it and with
-// no cards yet gets it on; one with cards is left without it.
+// (see FillFlavor); without it, on.
 //
-// Module: returns { KEY, enabled, setEnabled, initialize, forNewCard,
-// sidesOf, applyToCard }.
+// Module: returns { KEY, enabled, setEnabled, forNewCard, sidesOf,
+// applyToCard }.
 define(['faces/FillFlavor', 'se/java'], function (FillFlavor, java) {
     const KEY = 'AHLCG-FillFlavor';
 
     function enabled(settings) {
-        return FillFlavor.isOn(settings.get(KEY, '0'));
+        return FillFlavor.isOn(settings.get(KEY, '1'));
     }
 
     // sets the choice only where it changes, so a project left at the
     // default stays without the key
     function setEnabled(settings, on) {
         if (on !== enabled(settings)) settings.set(KEY, on ? '1' : '0');
-    }
-
-    function hasCards(folder) {
-        return folder.getChildren().some(function (kid) {
-            return kid.isFolder()
-                ? hasCards(kid)
-                : String(kid.getExtension()) === 'eon';
-        });
-    }
-
-    // turns the setting on for a project with neither it nor cards; returns
-    // whether it did
-    function initialize(project) {
-        var settings = project.getSettings();
-        if (settings.get(KEY) != null || hasCards(project)) return false;
-        setEnabled(settings, true);
-        project.writeTaskSettings();
-        return true;
     }
 
     // the open project's values for a face new to a card, or null
@@ -84,7 +65,6 @@ define(['faces/FillFlavor', 'se/java'], function (FillFlavor, java) {
         KEY: KEY,
         enabled: enabled,
         setEnabled: setEnabled,
-        initialize: initialize,
         forNewCard: forNewCard,
         sidesOf: sidesOf,
         applyToCard: applyToCard,
