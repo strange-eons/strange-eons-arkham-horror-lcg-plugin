@@ -13,7 +13,7 @@ catalog-name_fr = Horreur a Arkham : Le Jeu de Cartes
 catalog-name_it = Arkham Horror: Il Gioco di Carte
 catalog-name_pt = Arkham Horror: The Card Game
 
-catalog-credit = Strange Eons
+catalog-credit = Strange Eons (Christopher Currie, maintainer)
 catalog-homepage = \
     http://github.com/strange-eons/strange-eons-arkham-horror-lcg-plugin
 catalog-description = <p>This plug-in allows the creation of components for \
@@ -27,9 +27,9 @@ catalog-description = <p>This plug-in allows the creation of components for \
     (jaqenZann).</p>\n<p>Updated by <a \
     href="https://github.com/tokeeto/">Tokeeto</a></p>\n<p>Original templates \
     developed with the help of templates by GeckoTH and card scans by Will \
-    Fuqua.</p>\n<p>Later templates upgraded, added or modified by Tokeeto, 5argon \
-    and coldtoes of the Mythos Busters community.</p>\n<p>Italian translation by \
-    Stefano Cardinale. French translation by David Violeau. German translation by \
+    Fuqua.</p>\n<p>Later templates upgraded, added or modified by apsyka, Tokeeto, \
+    5argon and coldtoes of the Mythos Busters community.</p>\n<p>Italian translation \
+    by Stefano Cardinale. French translation by David Violeau. German translation by \
     Magnus Upmann.</p>\n<p>Thanks to Christopher G. Jennings for Strange Eons, and \
     to Nate French, MJ Newman, and FFG for this great game.</p>\n<p>Thanks also to \
     karagh, whose Lord of the Rings: The Card Game plugin was instrumental in making \
@@ -87,7 +87,6 @@ catalog-description_pt = <p>Este plug-in permite a criação de componentes para
     -94a6-404c-ab86-6a3b0e77a7a0/ip_policy_031419_final_v21.pdf</p>
 
 catalog-tags = game
-catalog-requires = \
-    CATALOGUEID{e69d2bd2-f155-4182-a38c-a3a356cfa0fb:2014-4-25-0-0-0-0}
+catalog-requires = CATALOGUEID{e69d2bd2-f155-4182-a38c-a3a356cfa0fb:2014-4-25-0-0-0-0}
 
 res://ArkhamHorrorLCG/ArkhamHorrorLCG.js
