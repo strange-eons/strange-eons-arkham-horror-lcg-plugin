@@ -66,6 +66,9 @@ define([
         var iconRegion = settings.getRegion(
             face.key(settings, 'TokenIcon-region')
         );
+        var iconInset = Number(
+            settings.get(face.key(settings, 'TokenIcon-inset'), '0')
+        );
         var tracker = trackerHeight > 0;
         var groupCount = blocks.length;
 
@@ -210,7 +213,7 @@ define([
                 box.draw(g, textRegion);
             } else box.draw(g, r);
 
-            paintIcons(g, sheet, block, r, iconRegion, even);
+            paintIcons(g, sheet, block, r, iconRegion, iconInset, even);
 
             yOffset += even
                 ? scaledSpacing + centerSpacing * scale
@@ -218,7 +221,8 @@ define([
         });
     }
 
-    function paintIcons(g, sheet, block, r, iconRegion, even) {
+    // Icons stack at the icon region's height, each drawn inset within it.
+    function paintIcons(g, sheet, block, r, iconRegion, inset, even) {
         var Region = common.Region;
         var count = block.tokens.length;
         var iconMin = 1000;
@@ -244,10 +248,10 @@ define([
                     'ArkhamHorrorLCG/overlays/AHLCG-Chaos' + token + '.png'
                 ),
                 new Region(
-                    iconRegion.x,
-                    iconY,
-                    iconRegion.width,
-                    iconRegion.height
+                    iconRegion.x + inset,
+                    iconY + inset,
+                    iconRegion.width - 2 * inset,
+                    iconRegion.height - 2 * inset
                 )
             );
         });

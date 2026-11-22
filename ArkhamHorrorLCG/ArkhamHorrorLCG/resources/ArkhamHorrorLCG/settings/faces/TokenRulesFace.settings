@@ -3,7 +3,7 @@
 AHLCG-TokenRulesFace-template = ArkhamHorrorLCG/templates/AHLCG-StoryChaosFull.jp2
 AHLCG-TokenRulesFace-EncounterFrame = ArkhamHorrorLCG/overlays/AHLCG-EncounterFrame.png
 AHLCG-TokenRulesFace-EncounterFrame-region = 128,78,155,31
-AHLCG-TokenRulesFace-Name-region = 28,90,319,75
+AHLCG-TokenRulesFace-Name-region = 42,90,291,75
 AHLCG-TokenRulesFace-Name-style = FAMILY: {Eons.namedObjects.AHLCGObject.titleFamily}; SIZE: {Eons.namedObjects.AHLCGObject.titleFontSize*1.318}; WEIGHT: {Eons.namedObjects.AHLCGObject.titleFontWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.titleFontWidth*1.05}; TRACKING:{Eons.namedObjects.AHLCGObject.titleFontTracking};FOREGROUND: #000000
 AHLCG-TokenRulesFace-Name-alignment = center, top
 AHLCG-TokenRulesFace-Name-tightness = 0.2
@@ -32,6 +32,8 @@ AHLCG-TokenRulesFace-Token-alignment = left, middle
 AHLCG-TokenRulesFace-Token-style = FAMILY: {Eons.namedObjects.AHLCGObject.bodyFamily}; SIZE: {Eons.namedObjects.AHLCGObject.bodyFontSize*1.02}; WEIGHT: {Eons.namedObjects.AHLCGObject.bodyFontWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.bodyFontWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.bodyFontTracking}; FOREGROUND: #000000
 AHLCG-TokenRulesFace-Token-tightness = 0.5
 AHLCG-TokenRulesFace-TokenIcon-region = 44,148,47,47
+# token discs are drawn this far inside the space each token takes
+AHLCG-TokenRulesFace-TokenIcon-inset = 3
 AHLCG-TokenRulesFace-TrackerBox-region = 32,371,306,92
 AHLCG-TokenRulesFace-TrackerName-region = 44,375,280,20
 AHLCG-TokenRulesFace-TrackerName-alignment = center, middle

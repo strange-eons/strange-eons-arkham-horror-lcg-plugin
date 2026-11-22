@@ -134,8 +134,11 @@ define([
         );
         if (name === 'Body' || name === 'Story') {
             let offset = 0;
-            if (this.getTitle(diy, faceIndex).indexOf('\n') > 0)
-                offset += SecondLineHeight;
+            let title =
+                this.paintedTitle != null
+                    ? this.paintedTitle
+                    : this.getTitle(diy, faceIndex);
+            if (title.indexOf('\n') > 0) offset += SecondLineHeight;
             if (this.getDifficulty(diy, faceIndex) !== 'None')
                 offset += DifficultyHeight;
             region.y += offset;
@@ -166,8 +169,11 @@ define([
                 this.key(diy.settings, 'Difficulty-region')
             ).y;
             let title = this.getTitle(diy, faceIndex);
-            if (title.length > 0)
+            if (title.length > 0) {
+                title = this.wrapTitle(g, diy, boxes.name, title);
+                this.paintedTitle = title;
                 top = this.paintChaosTitle(g, diy, boxes.name, title);
+            }
             top = this.paintDifficulty(
                 g,
                 diy,
@@ -178,7 +184,52 @@ define([
         }
 
         this.paintText(g, diy, sheet, boxes, top);
+        this.paintedTitle = null;
         this.paintCollector(g, diy, sheet, boxes, collector, !full);
+    };
+
+    // A one line title too wide for <Name-region> as two lines, broken at the
+    // space outside markup tags that leaves the longer line shortest.
+    TokenRulesFace.prototype.wrapTitle = function (g, diy, box, title) {
+        if (title.indexOf('\n') >= 0) return title;
+        var region = diy.settings.getRegion(
+            this.key(diy.settings, 'Name-region')
+        );
+        function height(text) {
+            box.markupText = text;
+            return box.measure(g, region);
+        }
+        var lineHeight = height('Size');
+        var oneLine = lineHeight * 1.5;
+        if (height(title) <= oneLine) return title;
+
+        var spaces = [];
+        var depth = 0;
+        for (let i = 0; i < title.length; i++) {
+            let c = title.charAt(i);
+            if (c === '<') depth++;
+            else if (c === '>') depth = Math.max(0, depth - 1);
+            else if (c === ' ' && depth === 0) spaces.push(i);
+        }
+        if (spaces.length === 0) return title;
+        // nearest the middle first
+        spaces.sort(function (a, b) {
+            return (
+                Math.abs(a - title.length / 2) - Math.abs(b - title.length / 2)
+            );
+        });
+        var split = function (i) {
+            return title.slice(0, i) + '\n' + title.slice(i + 1);
+        };
+        for (let n = 0; n < spaces.length; n++) {
+            let i = spaces[n];
+            if (
+                height(title.slice(0, i)) <= oneLine &&
+                height(title.slice(i + 1)) <= oneLine
+            )
+                return split(i);
+        }
+        return split(spaces[0]);
     };
 
     // Each line of the title above a double rule as wide as the last line.
