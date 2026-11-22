@@ -174,8 +174,7 @@ define([
             )
         );
         region.y += parseInt(FaceUtils.plugin().subtitleFontOffset);
-        box.markupText = subtitle;
-        box.drawAsSingleLine(g, region);
+        FaceUtils.drawCapCentered(g, box, subtitle, region);
     };
 
     InvestigatorFace.prototype.paint = function (

@@ -428,8 +428,7 @@ define([
             this.key(diy.settings, this.subtitleRegion + '-region')
         );
         region.y += parseInt(FaceUtils.plugin().subtitleFontOffset);
-        box.markupText = subtitle;
-        box.drawAsSingleLine(g, region);
+        FaceUtils.drawCapCentered(g, box, subtitle, region);
     };
 
     // the subtype line, such as WEAKNESS, from a game string key

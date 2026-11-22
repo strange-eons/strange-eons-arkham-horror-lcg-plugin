@@ -272,12 +272,11 @@ define([
                 )
             );
         }
-        var text = diy.settings.getRegion(
+        var text = diy.settings.getRegion2D(
             this.key(diy.settings, 'SubtitleText' + artInitial + '-region')
         );
         text.y += parseInt(FaceUtils.plugin().subtitleFontOffset);
-        box.markupText = subtitle;
-        box.drawAsSingleLine(g, text);
+        FaceUtils.drawCapCentered(g, box, subtitle, text);
     };
 
     AssetFace.prototype.paintContent = function (

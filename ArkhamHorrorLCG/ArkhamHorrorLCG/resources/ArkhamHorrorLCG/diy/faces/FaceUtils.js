@@ -11,8 +11,62 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
     const GeometricShape = Java.type(
         'ca.cgjennings.layout.PageShape$GeometricShape'
     );
+    const Rectangle = Java.type('java.awt.geom.Rectangle2D$Double');
+    const ArrayList = Java.type('java.util.ArrayList');
+    const AttributedString = Java.type('java.text.AttributedString');
+    const Font = Java.type('java.awt.Font');
     const POINTS_PER_INCH = 72;
     const IconSizes = { s: '0.14in', m: '0.35in', l: '0.60in' };
+
+    // How far down to move a region so a middle-aligned single line has its
+    // capitals, rather than its ascent and descent, centered in the region.
+    // The renderer clamps the line's top to the region's top.
+    function capShift(height, capHeight, ascent, descent) {
+        var top = Math.max(0, (height - ascent - descent) / 2);
+        return (height + capHeight) / 2 - (top + ascent);
+    }
+
+    // the cap height of the box's default font, as a fraction of its ascent
+    function capRatio(g, box) {
+        var styled = new AttributedString('H');
+        box.defaultStyle.applyStyle(styled);
+        var font = Font.getFont(styled.getIterator().getAttributes());
+        var frc = g.getFontRenderContext();
+        var cap = -font.createGlyphVector(frc, 'H').getVisualBounds().getY();
+        return cap / font.getLineMetrics('H', frc).getAscent();
+    }
+
+    // Draws markup as one line, as drawAsSingleLine does in a middle-aligned
+    // box, with its capitals centered vertically in the region.
+    function drawCapCentered(g, box, text, region) {
+        box.markupText = text;
+        var segments = new ArrayList();
+        box.appendSegments(
+            g,
+            new Rectangle(region.x, region.y, 1e6, 1e6),
+            segments
+        );
+        var shift = 0;
+        if (!segments.isEmpty()) {
+            let first = segments.get(0);
+            let ascent = first.getAscent();
+            shift = capShift(
+                region.height,
+                capRatio(g, box) * ascent,
+                ascent,
+                first.getDescent()
+            );
+        }
+        box.drawAsSingleLine(
+            g,
+            new Rectangle(
+                region.x,
+                region.y + shift,
+                region.width,
+                region.height
+            )
+        );
+    }
 
     // the plug-in's shared state: fonts, offsets and icon lists
     function plugin() {
@@ -392,6 +446,8 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
 
     return {
         polygonShape: polygonShape,
+        capShift: capShift,
+        drawCapCentered: drawCapCentered,
         createTextPanel: createTextPanel,
         partsMarkup: partsMarkup,
         textAreaWidth: textAreaWidth,
