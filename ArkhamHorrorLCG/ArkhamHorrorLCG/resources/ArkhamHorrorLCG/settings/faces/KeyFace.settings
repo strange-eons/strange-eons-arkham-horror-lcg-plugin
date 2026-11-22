@@ -28,7 +28,7 @@ AHLCG-KeyFace-Portrait-portrait-template = ArkhamHorrorLCG/default-portraits/Def
 AHLCG-KeyFace-ReturnEncounterIcon-region = 320.25,10.5,32,32
 AHLCG-KeyFace-Subtitle-alignment = center, middle
 AHLCG-KeyFace-Subtitle-style = FAMILY: {Eons.namedObjects.AHLCGObject.subtitleFamily}; SIZE: {Eons.namedObjects.AHLCGObject.subtitleSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.subtitleWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.subtitleWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.subtitleTracking}; FOREGROUND: #000000
-AHLCG-KeyFace-SubtitleText-region = 80,485,213,22
+AHLCG-KeyFace-SubtitleText-region = 80,483,213,22
 AHLCG-KeyFace-Subtype-alignment = center, middle
 AHLCG-KeyFace-Subtype-region = 83,301,203,15
 AHLCG-KeyFace-Subtype-style = FAMILY: {Eons.namedObjects.AHLCGObject.typeFamily}; SIZE: {Eons.namedObjects.AHLCGObject.subtypeSize}; WEIGHT: {Eons.namedObjects.AHLCGObject.subtypeWeight}; WIDTH: {Eons.namedObjects.AHLCGObject.subtypeWidth}; TRACKING: {Eons.namedObjects.AHLCGObject.subtypeTracking}; FOREGROUND: #000000
@@ -37,3 +37,4 @@ AHLCG-KeyFace-template = ArkhamHorrorLCG/templates/AHLCG-Key.jp2
 # the back
 AHLCG-KeyFace-Back-template = ArkhamHorrorLCG/templates/AHLCG-KeyBack.jp2
 AHLCG-KeyFace-Back-Label-region = 317,51,38,14
+AHLCG-KeyFace-Back-SubtitleText-region = 80,482,213,22
