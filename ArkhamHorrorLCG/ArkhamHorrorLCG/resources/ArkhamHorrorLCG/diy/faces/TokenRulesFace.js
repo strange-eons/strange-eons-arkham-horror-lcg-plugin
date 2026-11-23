@@ -18,7 +18,10 @@ define([
     const Difficulties = ['None', 'Front', 'Back', 'Unique'];
     // space a difficulty line and a second title line take from the text
     const DifficultyHeight = 29;
-    const SecondLineHeight = 24;
+    const SecondLineHeight = 21;
+    // title line pitch, and the space below the last line, in title line heights
+    const TitlePitch = 0.72;
+    const TitleBelow = 0.8;
 
     function TokenRulesFace() {
         TextBlocksFace.call(this);
@@ -244,12 +247,16 @@ define([
         var lineHeight = box.measure(g, region);
 
         var width = 0;
-        title.split('\n').forEach(function (line) {
+        var advance = function (dy) {
+            region.y += dy;
+            region.height -= dy;
+        };
+        title.split('\n').forEach(function (line, i) {
+            if (i > 0) advance(lineHeight * TitlePitch);
             box.markupText = line;
             width = box.drawAsSingleLine(g, region);
-            region.y += lineHeight * 0.8;
-            region.height -= lineHeight * 0.8;
         });
+        advance(lineHeight * TitleBelow);
 
         g.setPaint(Color.BLACK);
         g.setStroke(new BasicStroke(1.0));

@@ -19,7 +19,7 @@ TextBlocksFace.prototype.textRegion = () => ({ x: 0, y: 100, width: 300, height:
 TextBlocksFace.prototype.key = (settings, name) => 'AHLCG-TokenRulesFace-' + name;
 const Java = { type: () => function JavaClass() {} };
 const TokenRulesFace = load('faces/TokenRulesFace.js', {
-    'faces/FaceUtils': {},
+    'faces/FaceUtils': { plugin: () => ({ titleFontOffset: '2' }) },
     'faces/TextBlocks': { Styles: [] },
     'faces/TextBlocksFace': TextBlocksFace,
     'se/markup': {},
@@ -96,6 +96,45 @@ test('textRegion counts the painted title lines', () => {
     face.getDifficulty = () => 'None';
     assert.equal(face.textRegion(c, 0, 'Body').y, 100);
     face.paintedTitle = 'Two\nlines';
-    assert.equal(face.textRegion(c, 0, 'Body').y, 124);
+    assert.equal(face.textRegion(c, 0, 'Body').y, 121);
     face.paintedTitle = null;
+});
+
+// paintChaosTitle with title lines 20 high: records where each line and rule is drawn
+function paintTitle(title) {
+    const lines = [];
+    const rules = [];
+    const titleBox = {
+        markupText: '',
+        measure: () => 20,
+        drawAsSingleLine(g, region) {
+            lines.push(region.y);
+            return 50;
+        },
+    };
+    const g = {
+        setPaint() {},
+        setStroke() {},
+        drawLine(x1, y1) { rules.push(y1); },
+    };
+    const c = {
+        settings: { getRegion: () => ({ x: 0, y: 90, width: WIDTH, height: 75 }) },
+    };
+    const end = face.paintChaosTitle(g, c, titleBox, title);
+    return { lines, rules, end };
+}
+
+test('paintChaosTitle draws the rule below a one line title', () => {
+    const { lines, rules, end } = paintTitle('One');
+    assert.equal(lines.length, 1);
+    assert.equal(rules[0] - lines[0], 18);
+    assert.equal(end - lines[0], 28);
+});
+
+test('paintChaosTitle sets title lines closer than the space below the last', () => {
+    const { lines, rules, end } = paintTitle('Two\nlines');
+    assert.equal(lines.length, 2);
+    assert.ok(Math.abs(lines[1] - lines[0] - 14.4) < 1e-9);
+    assert.ok(Math.abs(rules[0] - lines[1] - 18) < 1e-9);
+    assert.ok(Math.abs(end - lines[0] - 42.4) < 1e-9);
 });
