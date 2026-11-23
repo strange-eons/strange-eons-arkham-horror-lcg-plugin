@@ -76,7 +76,8 @@ strangeEonsRenderTest {
 
     // Flexible card fixtures have one face on both sides. A back is checked
     // against its front's master with the collector line's a/b suffix, and the
-    // icon it moves, masked; filled and key backs have masters of their own.
+    // icon it moves, masked; filled, key and Return to The Gathering backs
+    // have masters of their own.
     // Masks are measured from the trim edge; renders include the 8.64 pt bleed.
     val bleed = 36
     val flexible = providers.gradleProperty("flexibleDir").map { file(it) }.getOrElse(file("src/renderTest/flexible"))
@@ -87,7 +88,7 @@ strangeEonsRenderTest {
             renderSuffix = "-1.png"
             masterSuffix = "-0.png"
             fun trimMask(glob: String, x: Int, y: Int, w: Int, h: Int) = mask(glob, x + bleed, y + bleed, w, h)
-            excludes.addAll("**/filled-1.png", "components/key/*")
+            excludes.addAll("**/filled-1.png", "components/key/*", "**/refReturnGathering-1.png")
             for (variant in listOf("reversed", "reversedReturnTo")) trimMask("components/act/$variant-1.png", 988, 718, 45, 22)
             for (variant in listOf("reversed", "reversedReturnTo", "reversedPerInvestigator")) {
                 trimMask("components/agenda/$variant-1.png", 564, 718, 45, 22)

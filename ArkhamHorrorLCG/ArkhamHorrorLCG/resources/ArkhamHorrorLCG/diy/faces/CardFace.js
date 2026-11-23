@@ -296,12 +296,12 @@ define([
         // a face with a subtype line has its style
         if (diy.settings.get(this.key(diy.settings, 'Subtype-style')) != null)
             boxes.subtype = this.createBox(diy, sheet, 'Subtype');
-        FaceUtils.initBodyTags(diy, boxes.name);
+        FaceUtils.initBodyTags(diy, boxes.name, this);
         var shape = this.bodyShape(
             diy.settings.getRegion(this.key(diy.settings, 'Body-region'))
         );
         if (shape != null) boxes.body.pageShape = shape;
-        FaceUtils.initBodyTags(diy, boxes.body);
+        FaceUtils.initBodyTags(diy, boxes.body, this);
         FaceUtils.initCopyrightTags(diy, boxes.copyright);
         return boxes;
     };

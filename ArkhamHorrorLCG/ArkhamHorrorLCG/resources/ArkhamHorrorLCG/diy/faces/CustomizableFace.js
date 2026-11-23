@@ -148,8 +148,8 @@ define([
             body: this.createBox(diy, sheet, 'Body'),
             copyright: this.createBox(diy, sheet, 'Copyright'),
         };
-        FaceUtils.initBodyTags(diy, boxes.name);
-        FaceUtils.initBodyTags(diy, boxes.body);
+        FaceUtils.initBodyTags(diy, boxes.name, this);
+        FaceUtils.initBodyTags(diy, boxes.body, this);
         FaceUtils.initCopyrightTags(diy, boxes.copyright);
         return boxes;
     };

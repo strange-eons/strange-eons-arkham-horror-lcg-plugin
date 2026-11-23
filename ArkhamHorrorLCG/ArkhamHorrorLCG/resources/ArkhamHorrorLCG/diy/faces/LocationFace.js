@@ -174,7 +174,7 @@ define([
                 diy.settings.get(this.key(diy.settings, 'Victory-tightness'))
             )
         );
-        FaceUtils.initBodyTags(diy, boxes.victory);
+        FaceUtils.initBodyTags(diy, boxes.victory, this);
         return boxes;
     };
 

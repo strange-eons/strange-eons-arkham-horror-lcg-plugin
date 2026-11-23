@@ -17,6 +17,9 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
     const Font = Java.type('java.awt.Font');
     const POINTS_PER_INCH = 72;
     const IconSizes = { s: '0.14in', m: '0.35in', l: '0.60in' };
+    const ARROW = 'res://ArkhamHorrorLCG/icons/AHLCG-Arrow.png';
+    const ARROW_WIDTH = 0.23;
+    const ARROW_HEIGHT = (ARROW_WIDTH * 150) / 524;
 
     // How far down to move a region so a middle-aligned single line has its
     // capitals, rather than its ascent and descent, centered in the region.
@@ -125,16 +128,49 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
         return used.length < i + 1 || used.charAt(i) === '1';
     }
 
-    function setIconTags(box, tag, image) {
-        for (let size in IconSizes) {
+    // tag + s, m or l at those sizes; the bare tag at size
+    function setIconTags(box, tag, image, size) {
+        box.setReplacementForTag(
+            tag,
+            '<image ' + image + ' ' + size + ' baseline>'
+        );
+        for (let suffix in IconSizes) {
             box.setReplacementForTag(
-                tag + size,
-                '<image ' + image + ' ' + IconSizes[size] + ' baseline>'
+                tag + suffix,
+                '<image ' + image + ' ' + IconSizes[suffix] + ' baseline>'
             );
         }
     }
 
-    function setUserIconTags(box, type) {
+    function inches(value) {
+        return Number(value.toFixed(4)) + 'in';
+    }
+
+    // the width of the face's <name>-region (EncounterIcon or
+    // ReturnEncounterIcon), else the medium icon size
+    function headerIconSize(diy, face, name) {
+        if (face == null) return IconSizes.m;
+        var key = face.key(diy.settings, name + '-region');
+        if (diy.settings.get(key) == null) return IconSizes.m;
+        var width = diy.settings.getRegion2D(key).width;
+        return inches(width / (face.dpi || 150));
+    }
+
+    // an arrow centered on baseline icons of size
+    function arrowTag(size) {
+        var top = (parseFloat(size) + ARROW_HEIGHT) / 2;
+        return (
+            '<image ' +
+            ARROW +
+            ' ' +
+            ARROW_WIDTH +
+            'in baseline ' +
+            inches(top) +
+            '>'
+        );
+    }
+
+    function setUserIconTags(box, type, size) {
         var settings = common.Settings.getUser();
         var count = settings.getInt('AHLCG-User' + type + 'Count', 0);
         for (let i = 1; i <= count; i++) {
@@ -146,15 +182,19 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
             setIconTags(
                 box,
                 tag,
-                '"' + settings.get('AHLCG-User' + type + 'Icon' + i) + '"'
+                '"' + settings.get('AHLCG-User' + type + 'Icon' + i) + '"',
+                size
             );
         }
     }
 
-    // tags for card text: symbols, styles, encounter and collection icons
-    function initBodyTags(diy, box) {
+    // tags for card text: symbols, styles, encounter and collection icons;
+    // a bare icon tag matches the header icon of face, if given
+    function initBodyTags(diy, box, face) {
         var settings = diy.settings;
         var o = plugin();
+        var iconSize = headerIconSize(diy, face, 'EncounterIcon');
+        var returnSize = headerIconSize(diy, face, 'ReturnEncounterIcon');
 
         for (let i = 0; i < o.TagList.length; i++) {
             let item = o.TagList[i];
@@ -174,6 +214,7 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
         }
 
         box.setReplacementForTag('bultab', '     ');
+        box.setReplacementForTag(settings.get('Arrow-tag'), arrowTag(iconSize));
 
         for (let i = 0; i < o.standardEncounterList.length; i++) {
             let entry = o.standardEncounterList[i];
@@ -181,11 +222,14 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
                 setIconTags(
                     box,
                     entry[2],
-                    'res://ArkhamHorrorLCG/icons/AHLCG-' + entry[0] + '.png'
+                    'res://ArkhamHorrorLCG/icons/AHLCG-' + entry[0] + '.png',
+                    entry[0].substring(0, 6) === 'Return'
+                        ? returnSize
+                        : iconSize
                 );
             }
         }
-        setUserIconTags(box, 'Encounter');
+        setUserIconTags(box, 'Encounter', iconSize);
 
         for (let i = 0; i < o.standardCollectionList.length; i++) {
             let entry = o.standardCollectionList[i];
@@ -193,11 +237,12 @@ define(['se/common', 'se/java', 'se/strings', 'se/ui'], function (
                 setIconTags(
                     box,
                     entry[1],
-                    'res://ArkhamHorrorLCG/icons/AHLCG-' + entry[0] + '.png'
+                    'res://ArkhamHorrorLCG/icons/AHLCG-' + entry[0] + '.png',
+                    iconSize
                 );
             }
         }
-        setUserIconTags(box, 'Collection');
+        setUserIconTags(box, 'Collection', iconSize);
 
         for (let i = 0; i < o.locationIcons.length; i++) {
             let item = o.locationIcons[i];

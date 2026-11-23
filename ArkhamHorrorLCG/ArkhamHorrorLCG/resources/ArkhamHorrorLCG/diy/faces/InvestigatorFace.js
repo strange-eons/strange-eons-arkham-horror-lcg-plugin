@@ -138,7 +138,7 @@ define([
             return box;
         }
         boxes.parallelName = parallel('Name');
-        FaceUtils.initBodyTags(diy, boxes.parallelName);
+        FaceUtils.initBodyTags(diy, boxes.parallelName, this);
         boxes.parallelSubtitle = parallel('Subtitle');
         if (!this.hasSkills) return boxes;
         boxes.skills = Skills.map(function () {

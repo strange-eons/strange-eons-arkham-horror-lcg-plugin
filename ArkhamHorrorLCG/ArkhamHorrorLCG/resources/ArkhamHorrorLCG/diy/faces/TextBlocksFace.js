@@ -137,11 +137,11 @@ define([
             encounterNumber: this.createBox(diy, sheet, 'EncounterNumber'),
             copyright: this.createBox(diy, sheet, 'Copyright'),
         };
-        FaceUtils.initBodyTags(diy, boxes.name);
-        FaceUtils.initBodyTags(diy, boxes.traits);
-        FaceUtils.initBodyTags(diy, boxes.header);
-        FaceUtils.initBodyTags(diy, boxes.story);
-        FaceUtils.initBodyTags(diy, boxes.body);
+        FaceUtils.initBodyTags(diy, boxes.name, this);
+        FaceUtils.initBodyTags(diy, boxes.traits, this);
+        FaceUtils.initBodyTags(diy, boxes.header, this);
+        FaceUtils.initBodyTags(diy, boxes.story, this);
+        FaceUtils.initBodyTags(diy, boxes.body, this);
         FaceUtils.initCopyrightTags(diy, boxes.copyright);
         return boxes;
     };

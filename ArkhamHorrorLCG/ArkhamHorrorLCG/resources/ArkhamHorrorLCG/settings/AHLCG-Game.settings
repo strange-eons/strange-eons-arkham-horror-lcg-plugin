@@ -169,6 +169,7 @@ GuideBullet-tag = gbul
 GuideBullet-tag-replacement = <ahf><boxbullet>B</boxbullet></ahf>
 Square-tag = squ
 Square-tag-replacement = <ahf>s</ahf>
+Arrow-tag = arrow
 
 # for story cards
 #ActionSmall-tag = act

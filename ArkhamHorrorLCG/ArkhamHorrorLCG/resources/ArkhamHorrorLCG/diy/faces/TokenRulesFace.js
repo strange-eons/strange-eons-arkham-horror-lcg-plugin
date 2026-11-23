@@ -102,7 +102,7 @@ define([
             ) * FaceUtils.plugin().bodyFontTightness
         );
         box.setTextFitting(markup.FIT_SCALE_TEXT);
-        FaceUtils.initBodyTags(diy, box);
+        FaceUtils.initBodyTags(diy, box, this);
         return box;
     };
 

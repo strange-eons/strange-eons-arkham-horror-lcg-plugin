@@ -85,8 +85,8 @@ define([
         boxes.name.setLineTightness(
             Number(diy.settings.get(this.key(diy.settings, 'Name-tightness')))
         );
-        FaceUtils.initBodyTags(diy, boxes.name);
-        FaceUtils.initBodyTags(diy, boxes.body);
+        FaceUtils.initBodyTags(diy, boxes.name, this);
+        FaceUtils.initBodyTags(diy, boxes.body, this);
         return boxes;
     };
 
