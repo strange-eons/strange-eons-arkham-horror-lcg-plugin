@@ -1,7 +1,8 @@
 // Investigator back: art, class art, the front's title (see CardFace), and
-// eight named sections and a story in the class's outline. The class and the
-// subtitle are the card's, $CardClass and $Subtitle, as legacy cards save
-// them; a Story class back shows the encounter set.
+// eight named sections and a story in the class's outline. The subtitle is
+// the card's $Subtitle, as legacy cards save it; the class is $CardClassBack,
+// or the card's $CardClass when that says 'Copy front'. A Story class back
+// shows the encounter set.
 //
 // Settings: section n is Text<n>Name<suffix> and Text<n><suffix>, with
 // <text key>Spacing for the first seven; the story is InvStory<suffix>.
@@ -13,6 +14,7 @@ define([
     'faces/FaceUtils',
     'faces/InvestigatorFace',
     'faces/PlayerCard',
+    'se/java',
     'se/strings',
     'se/ui',
 ], function (
@@ -21,9 +23,12 @@ define([
     FaceUtils,
     InvestigatorFace,
     PlayerCard,
+    Java,
     strings,
     ui
 ) {
+    const ListItem = Java.type('ca.cgjennings.apps.arkham.diy.ListItem');
+    const CopyFront = 'Copy front';
     const Sections = 8;
     const Standard = [
         'Deck Size',
@@ -83,6 +88,8 @@ define([
     InvestigatorBackFace.prototype.spacedParts = sectionParts().slice(0, -1);
 
     InvestigatorBackFace.prototype.cardClass = function (diy, faceIndex) {
+        var own = String(diy.settings.get('CardClassBack', CopyFront));
+        if (own !== CopyFront) return own;
         return String(diy.settings.get('CardClass', 'Guardian'));
     };
 
@@ -102,6 +109,28 @@ define([
     ) {
         CardFace.prototype.setDefaults.call(this, diy, faceIndex, keep);
         this.setSettings(diy, true, { CardClass: 'Guardian', Subtitle: '' });
+        this.setSettings(diy, keep, { CardClassBack: CopyFront });
+    };
+
+    InvestigatorBackFace.prototype.createClassPanel = function (
+        bindings,
+        faceIndex
+    ) {
+        var classes = [
+            new ListItem(CopyFront, strings.string('AHLCG-LocIcon-CopyFront')),
+        ].concat(FaceUtils.plugin().comboClassesI.slice(), [
+            new ListItem('Story', strings.string('AHLCG-Class-Story')),
+        ]);
+        var list = new ui.comboBox(classes, null);
+        this.bindKey(bindings, faceIndex, 'CardClassBack', list);
+        var panel = new ui.Grid();
+        panel.place(
+            strings.string('AHLCG-Class'),
+            'align right',
+            list,
+            'pushx, growx'
+        );
+        return panel;
     };
 
     InvestigatorBackFace.prototype.createTextPanels = function (
@@ -187,6 +216,10 @@ define([
                 {
                     panel: this.createTitlePanel(diy, bindings, faceIndex),
                     title: strings.string('AHLCG-Title'),
+                },
+                {
+                    panel: this.createClassPanel(bindings, faceIndex),
+                    title: strings.string('AHLCG-BasicData'),
                 },
             ],
             tabs: [
