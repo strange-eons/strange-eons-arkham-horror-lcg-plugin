@@ -101,40 +101,32 @@ test('a dry run lists centered flavor sides and changes nothing', () => {
     assert.deepEqual(out.written, []);
 });
 
-test('apply zeroes only the spacing after the nearest text above flavor, backed up', () => {
+test('apply zeroes only the spacing after Rules, with or without text, backed up', () => {
     const cards = {
-        // empty Rules between Keywords and Flavor: Keywords' spacing only
+        // empty Rules: its spacing still goes; other fields are left alone
         'a.eon': new DIY({ FillFlavor: '1', Traits: 'T', TraitsSpacing: '5', Keywords: 'K', KeywordsSpacing: '2', RulesSpacing: '1', Flavor: 'F', FlavorSpacing: '3' }),
         // back side only
         'b.eon': new DIY({ FillFlavorBack: '1', RulesBack: 'R', RulesBackSpacing: '6', FlavorBack: 'F', RulesSpacing: '6', Flavor: 'F' }),
     };
     const out = run({ apply: true, cards });
-    assert.deepEqual(cards['a.eon'].values.KeywordsSpacing, '0');
-    assert.deepEqual(cards['a.eon'].values.RulesSpacing, '1');
-    assert.deepEqual(cards['a.eon'].values.TraitsSpacing, '5');
-    assert.deepEqual(cards['a.eon'].values.FlavorSpacing, '3');
-    assert.deepEqual(cards['b.eon'].values.RulesBackSpacing, '0');
-    assert.deepEqual(cards['b.eon'].values.RulesSpacing, '6');
+    assert.equal(out.lines[1], '  a.eon: RulesSpacing 1 -> 0');
+    assert.equal(cards['a.eon'].values.RulesSpacing, '0');
+    assert.equal(cards['a.eon'].values.KeywordsSpacing, '2');
+    assert.equal(cards['a.eon'].values.TraitsSpacing, '5');
+    assert.equal(cards['a.eon'].values.FlavorSpacing, '3');
+    assert.equal(cards['b.eon'].values.RulesBackSpacing, '0');
+    assert.equal(cards['b.eon'].values.RulesSpacing, '6');
     assert.deepEqual(out.written, ['project/a.eon', 'project/b.eon']);
     assert.deepEqual(out.copied, ['project/flavor-spacing-backup/a.eon', 'project/flavor-spacing-backup/b.eon']);
     assert.equal(out.synced, 1);
     assert.equal(out.lines.at(-1), 'Backups of changed files are in flavor-spacing-backup.');
 });
 
-test('with no text above flavor, the spacing of every field above it is zeroed', () => {
-    const card = new DIY({ FillFlavorBack: '1', FlavorBack: 'F', TraitsBackSpacing: '2', KeywordsBackSpacing: '0', RulesBackSpacing: '5', FlavorBackSpacing: '3' });
-    const out = run({ apply: true, cards: { 'a.eon': card } });
-    assert.equal(out.lines[1], '  a.eon: TraitsBackSpacing 2 -> 0, RulesBackSpacing 5 -> 0');
-    assert.equal(card.values.TraitsBackSpacing, '0');
-    assert.equal(card.values.RulesBackSpacing, '0');
-    assert.equal(card.values.FlavorBackSpacing, '3');
-});
-
 test('AFTER_FLAVOR also zeroes the spacing after flavor', () => {
     const cards = {
         'a.eon': new DIY(centered),
-        // nothing above flavor: the empty fields' spacing and after
-        'b.eon': new DIY({ FillFlavorBack: '1', FlavorBack: 'F', FlavorBackSpacing: '2', RulesBackSpacing: '4' }),
+        // empty Rules: its spacing and after
+        'b.eon': new DIY({ FillFlavorBack: '1', FlavorBack: 'F', FlavorBackSpacing: '2', RulesBackSpacing: '4', KeywordsBackSpacing: '1' }),
         // nothing to change
         'c.eon': new DIY({ ...centered, RulesSpacing: '0', FlavorSpacing: '0' }),
     };
@@ -147,6 +139,7 @@ test('AFTER_FLAVOR also zeroes the spacing after flavor', () => {
     assert.equal(cards['a.eon'].values.FlavorSpacing, '0');
     assert.equal(cards['b.eon'].values.FlavorBackSpacing, '0');
     assert.equal(cards['b.eon'].values.RulesBackSpacing, '0');
+    assert.equal(cards['b.eon'].values.KeywordsBackSpacing, '1');
     assert.deepEqual(out.written, ['project/a.eon', 'project/b.eon']);
 });
 
@@ -155,6 +148,7 @@ test('sides off, without the setting or without flavor, and other cards, are ski
         'unset.eon': new DIY({ Rules: 'R', RulesSpacing: '4', Flavor: 'F' }),
         'off.eon': new DIY({ ...centered, FillFlavor: '0' }),
         'noFlavor.eon': new DIY({ ...centered, Flavor: '' }),
+        'nullFlavor.eon': new DIY({ ...centered, Flavor: null }),
         'zero.eon': new DIY({ ...centered, RulesSpacing: '0' }),
         'other.eon': new DIY(centered, 'res://Other/x.js'),
         'plain.eon': { values: centered },
