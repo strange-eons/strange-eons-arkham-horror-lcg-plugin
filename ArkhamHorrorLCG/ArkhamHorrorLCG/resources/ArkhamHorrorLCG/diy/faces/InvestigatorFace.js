@@ -167,7 +167,7 @@ define([
         className,
         subtitle
     ) {
-        var region = diy.settings.getRegion(
+        var region = diy.settings.getRegion2D(
             this.key(
                 diy.settings,
                 'SubtitleText' + PlayerCard.initial(className) + '-region'
