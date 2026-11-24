@@ -5,7 +5,8 @@
  * A side counts when its "Center flavor text vertically" box is checked.
  * Only sides with flavor text are changed. The spacing before flavor is the
  * spacing after the nearest text above it (Rules, Keywords or Traits); the
- * spacing of empty fields between them is left alone. With AFTER_FLAVOR true,
+ * spacing of empty fields between them is left alone. With no text above
+ * flavor, it is the spacing of every field above it. With AFTER_FLAVOR true,
  * the spacing after the flavor text is set to 0 as well.
  *
  * Run from the Quickscript window, or with Run on the script in the project,
@@ -60,12 +61,17 @@ function spacingAroundFlavor(settings, side) {
     )
         return [];
     var found = [];
+    var empty = [];
     for (var i = ABOVE_FLAVOR.length - 1; i >= 0; --i) {
         var part = ABOVE_FLAVOR[i] + side;
-        if (text(settings, part) === '') continue;
-        found = spaced(settings, part + 'Spacing');
-        break;
+        var spacing = spaced(settings, part + 'Spacing');
+        if (text(settings, part) !== '') {
+            found = spacing;
+            break;
+        }
+        empty = spacing.concat(empty);
     }
+    if (i < 0) found = empty;
     if (AFTER_FLAVOR)
         found = found.concat(spaced(settings, 'Flavor' + side + 'Spacing'));
     return found;

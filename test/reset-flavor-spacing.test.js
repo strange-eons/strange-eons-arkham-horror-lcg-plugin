@@ -121,10 +121,19 @@ test('apply zeroes only the spacing after the nearest text above flavor, backed 
     assert.equal(out.lines.at(-1), 'Backups of changed files are in flavor-spacing-backup.');
 });
 
+test('with no text above flavor, the spacing of every field above it is zeroed', () => {
+    const card = new DIY({ FillFlavorBack: '1', FlavorBack: 'F', TraitsBackSpacing: '2', KeywordsBackSpacing: '0', RulesBackSpacing: '5', FlavorBackSpacing: '3' });
+    const out = run({ apply: true, cards: { 'a.eon': card } });
+    assert.equal(out.lines[1], '  a.eon: TraitsBackSpacing 2 -> 0, RulesBackSpacing 5 -> 0');
+    assert.equal(card.values.TraitsBackSpacing, '0');
+    assert.equal(card.values.RulesBackSpacing, '0');
+    assert.equal(card.values.FlavorBackSpacing, '3');
+});
+
 test('AFTER_FLAVOR also zeroes the spacing after flavor', () => {
     const cards = {
         'a.eon': new DIY(centered),
-        // nothing above flavor: only after
+        // nothing above flavor: the empty fields' spacing and after
         'b.eon': new DIY({ FillFlavorBack: '1', FlavorBack: 'F', FlavorBackSpacing: '2', RulesBackSpacing: '4' }),
         // nothing to change
         'c.eon': new DIY({ ...centered, RulesSpacing: '0', FlavorSpacing: '0' }),
@@ -133,11 +142,11 @@ test('AFTER_FLAVOR also zeroes the spacing after flavor', () => {
     assert.deepEqual(out.lines.slice(0, 3), [
         'Changing spacing around centered flavor text:',
         '  a.eon: RulesSpacing 4 -> 0, FlavorSpacing 3 -> 0',
-        '  b.eon: FlavorBackSpacing 2 -> 0',
+        '  b.eon: RulesBackSpacing 4 -> 0, FlavorBackSpacing 2 -> 0',
     ]);
     assert.equal(cards['a.eon'].values.FlavorSpacing, '0');
     assert.equal(cards['b.eon'].values.FlavorBackSpacing, '0');
-    assert.equal(cards['b.eon'].values.RulesBackSpacing, '4');
+    assert.equal(cards['b.eon'].values.RulesBackSpacing, '0');
     assert.deepEqual(out.written, ['project/a.eon', 'project/b.eon']);
 });
 
