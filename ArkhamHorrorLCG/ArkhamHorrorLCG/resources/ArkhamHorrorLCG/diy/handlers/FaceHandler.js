@@ -54,6 +54,10 @@ define([
     const DefaultPortrait = Java.type(
         'ca.cgjennings.apps.arkham.component.DefaultPortrait'
     );
+    const Region = Java.type('resources.Settings$Region');
+    const ENCOUNTER_CLIP_KEY = 'AHLCG-Face-Encounter-portrait-clip-region';
+    // cards saved before this placed set icons to cover their clip
+    const SET_ICONS_FIT_SINCE = 32;
     const FACE_FRONT = 0;
     const FACE_BACK = 1;
     const GeneralHint = 'wrap, pushx, growx';
@@ -180,8 +184,9 @@ define([
     };
 
     // The region a custom encounter icon's scale is set against: the front's
-    // icon region, or the back's when the front has none. Other faces draw
-    // the icon scaled from it to their own region.
+    // icon region, or the back's when the front has none, enclosed in whole
+    // pixels as portrait clips are. Faces draw the icon scaled from it to
+    // their own region.
     FaceHandler.prototype.encounterReference = function (diy) {
         for (var i = FACE_FRONT; i <= FACE_BACK; i++) {
             let face = this.faces[i];
@@ -191,15 +196,71 @@ define([
                     face.key(diy.settings, 'EncounterIcon-region')
                 ) != null
             )
-                return face.collectorRegion(diy, 'EncounterIcon');
+                return new Region(
+                    face.collectorRegion(diy, 'EncounterIcon', true).getBounds()
+                );
         }
         return null;
     };
+
+    // Sets the encounter portrait's clip to the reference region and refits
+    // the icon to it. Settings can't change while a sheet paints.
+    FaceHandler.prototype.updateEncounterClip = function (diy, portrait) {
+        var reference = this.encounterReference(diy);
+        if (reference == null) return;
+        var clip = diy.settings.getRegion(ENCOUNTER_CLIP_KEY);
+        if (!reference.equals(clip))
+            diy.settings.setRegion(ENCOUNTER_CLIP_KEY, reference);
+        refitEncounter(portrait, clip, reference, false);
+    };
+
+    function near(a, b) {
+        return Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(b), 1);
+    }
+
+    // An icon placed in the from clip, placed in the to clip. One still at
+    // its automatic placement is fit whole; one placed by hand keeps its
+    // place, scaled. The automatic placement fits the clip, or for a card
+    // saved by an older version (covered) covers it.
+    function refitEncounter(portrait, from, to, covered) {
+        if (portrait == null || to == null) return;
+        if (String(portrait.getSource()) === '') return;
+        if (from == null) from = to;
+        var image = portrait.getImage();
+        var iw = image.getWidth();
+        var ih = image.getHeight();
+        var scale = portrait.getScale();
+        var x = portrait.getPanX();
+        var y = portrait.getPanY();
+        var placed = covered
+            ? Math.max(from.width / iw, from.height / ih)
+            : Math.min(from.width / iw, from.height / ih);
+        var automatic = near(x, 0) && near(y, 0) && near(scale, placed);
+        var ratio = Math.min(to.width / from.width, to.height / from.height);
+        var fitted = automatic
+            ? Math.min(to.width / iw, to.height / ih)
+            : scale * ratio;
+        if (!near(scale, fitted)) portrait.setScale(fitted);
+        if (automatic) return;
+        if (!near(ratio, 1)) {
+            portrait.setPanX(x * ratio);
+            portrait.setPanY(y * ratio);
+        }
+    }
+    FaceHandler.refitEncounter = refitEncounter;
+
+    // A set icon's default scale fits it whole in its region: an SVG's bounds
+    // are its artwork, so a tall or wide icon would otherwise overflow.
+    function fitWhole(portrait) {
+        if (!portrait.getScaleUsesMinimum()) portrait.setScaleUsesMinimum(true);
+        return portrait;
+    }
 
     FaceHandler.prototype.createPortrait = function (diy, kind) {
         var portrait = new DefaultPortrait(diy, 'AHLCG-Face-' + kind, true);
         portrait.facesToUpdate = [FACE_FRONT, FACE_BACK];
         portrait.backgroundFilled = false;
+        fitWhole(portrait);
         portrait.installDefault();
         return portrait;
     };
@@ -220,6 +281,8 @@ define([
 
         this.portraitKinds = kinds;
         this.portraits = portraits;
+        var encounter = kinds.indexOf('Encounter');
+        if (encounter >= 0) this.updateEncounterClip(diy, portraits[encounter]);
         kinds.forEach(function (kind, i) {
             Collector.setDefaults(diy, kind, portraits[i]);
         });
@@ -766,7 +829,6 @@ define([
             {
                 collection: this.findPortrait('Collection'),
                 encounter: this.findPortrait('Encounter'),
-                encounterReference: this.encounterReference(diy),
                 suffix:
                     bothShow &&
                     this.showsCollectionNumber(FACE_FRONT) &&
@@ -792,12 +854,12 @@ define([
     // face key; its image, pan and scale are kept.
     FaceHandler.prototype.adoptPortrait = function (kind, portrait) {
         var key = 'AHLCG-Face-' + kind;
-        if (String(portrait.getBaseKey()) === key) return portrait;
+        if (String(portrait.getBaseKey()) === key) return fitWhole(portrait);
 
         var adopted = new DefaultPortrait(key, portrait);
         adopted.facesToUpdate = [FACE_FRONT, FACE_BACK];
         adopted.backgroundFilled = false;
-        return adopted;
+        return fitWhole(adopted);
     };
 
     // An art portrait saved under another key, moved to the key of the one
@@ -886,11 +948,19 @@ define([
             this.setFaceTemplates(diy);
         }
 
+        // the clip the saved encounter icon was placed in
+        var clip = diy.settings.getRegion(ENCOUNTER_CLIP_KEY);
         this.updateCollector(diy);
         var legacy =
             diy.version < this.version ? this.legacyPortraits(diy) : null;
         if (legacy != null) this.readLegacyPortraits(diy, ois, legacy);
         else this.readPortraits(diy, ois);
+        refitEncounter(
+            this.findPortrait('Encounter'),
+            clip,
+            diy.settings.getRegion(ENCOUNTER_CLIP_KEY),
+            diy.version < SET_ICONS_FIT_SINCE
+        );
         if (diy.version < this.version && this.config.upgradeArt)
             this.config.upgradeArt(diy, this.art);
 

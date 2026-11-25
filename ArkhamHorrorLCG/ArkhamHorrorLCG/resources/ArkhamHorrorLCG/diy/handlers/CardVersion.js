@@ -3,5 +3,5 @@
 //
 // Module: returns the version.
 define(function () {
-    return 31;
+    return 32;
 });

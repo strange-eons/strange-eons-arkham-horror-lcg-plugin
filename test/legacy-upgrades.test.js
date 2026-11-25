@@ -37,6 +37,7 @@ function component(version, values = {}) {
             get: key => values[key] ?? null,
             set: (key, value) => { values[key] = value; },
             reset: key => { delete values[key]; },
+            getRegion: () => null,
         },
         setCornerRadius() {},
         values,
@@ -49,6 +50,8 @@ function reader(config = {}) {
     Object.assign(handler, {
         version: 31,
         config,
+        portraitKinds: [],
+        portraits: [],
         faces: [0, 1].map(side => ({
             setDefaults(card, index, keep) {
                 assert.equal(index, side);

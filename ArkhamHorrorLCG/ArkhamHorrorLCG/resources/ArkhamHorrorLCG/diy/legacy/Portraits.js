@@ -68,6 +68,9 @@ define([
             rotate = false;
             minimum = true;
         }
+        // set icons fit their region whole: an SVG's bounds are its artwork,
+        // so a tall or wide icon would otherwise overflow
+        else if (key === 'Encounter' || key === 'Collection') minimum = true;
 
         setDefaults(card, diy, settingsFace, key, key);
         if (faces === 'Both') setDefaults(card, diy, FACE_BACK, key, key);

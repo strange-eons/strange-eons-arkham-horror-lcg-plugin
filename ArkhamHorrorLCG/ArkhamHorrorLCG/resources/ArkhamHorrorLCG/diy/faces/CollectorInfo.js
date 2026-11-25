@@ -18,11 +18,72 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
     const InversionFilter = Java.type(
         'ca.cgjennings.graphics.filters.InversionFilter'
     );
+    const RenderingHints = Java.type('java.awt.RenderingHints');
+    const StrangeImage = Java.type('resources.StrangeImage');
     const Sides = ['Front', 'Back'];
     const ENCOUNTER_CLIP_KEY = 'AHLCG-Face-Encounter-portrait-clip-region';
 
-    function iconPath(name) {
-        return 'ArkhamHorrorLCG/icons/AHLCG-' + name + '.png';
+    // a built-in set icon: a vector image trimmed to its artwork
+    function setIcon(name) {
+        return StrangeImage.get(
+            'res://ArkhamHorrorLCG/icons/AHLCG-' + name + '.svg'
+        );
+    }
+
+    // the pixel size g draws region with, at least the region's own
+    function pixelSize(g, region) {
+        var scale = Math.max(Math.abs(g.getTransform().getScaleX()), 1);
+        return {
+            width: Math.max(1, Math.ceil(region.width * scale)),
+            height: Math.max(1, Math.ceil(region.height * scale)),
+        };
+    }
+
+    // the part of a width x height box that an image fits, centered
+    function fitBox(image, x, y, width, height) {
+        var scale = Math.min(
+            width / image.getWidth(),
+            height / image.getHeight()
+        );
+        var w = image.getWidth() * scale;
+        var h = image.getHeight() * scale;
+        return {
+            x: x + (width - w) / 2,
+            y: y + (height - h) / 2,
+            width: w,
+            height: h,
+        };
+    }
+
+    // an image fit whole and centered in a new width x height bitmap
+    function fitImage(image, width, height) {
+        var out = imageutils.ImageUtils.create(width, height, true);
+        var g = out.createGraphics();
+        try {
+            g.setRenderingHint(
+                RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BICUBIC
+            );
+            let box = fitBox(image, 0, 0, width, height);
+            g.drawImage(
+                image,
+                Math.round(box.x),
+                Math.round(box.y),
+                Math.round(box.width),
+                Math.round(box.height),
+                null
+            );
+        } finally {
+            g.dispose();
+        }
+        return out;
+    }
+
+    // a set icon as a bitmap with the pixels g draws region with, fit and
+    // centered
+    function setIconBitmap(g, name, region) {
+        var size = pixelSize(g, region);
+        return setIcon(name).toBufferedImage(size.width, size.height, true);
     }
 
     function inverted(image) {
@@ -64,12 +125,13 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
     // returns the left edge of the icon
     function paintCollectionIcon(diy, g, sheet, face, portrait, x) {
         var region = endAt(face.collectorRegion(diy, 'CollectionIcon'), x);
-        var icon =
-            String(diy.settings.get('CollectionType', '0')) === '0'
-                ? imageutils.ImageUtils.get(
-                      iconPath(diy.settings.get('Collection'))
-                  )
-                : portrait.getImage();
+        var icon;
+        if (String(diy.settings.get('CollectionType', '0')) === '0')
+            icon = setIconBitmap(g, diy.settings.get('Collection'), region);
+        else {
+            let size = pixelSize(g, region);
+            icon = fitImage(portrait.getImage(), size.width, size.height);
+        }
         sheet.paintImage(
             g,
             face.invertCollectionIcon ? inverted(icon) : icon,
@@ -118,7 +180,7 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
                 null
             );
             g.setComposite(AlphaComposite.DstOut);
-            g.drawImage(ImageUtils.resize(icon, 28, 28), 4, 4, null);
+            g.drawImage(fitImage(icon, 28, 28), 4, 4, null);
         } finally {
             g.dispose();
         }
@@ -141,34 +203,25 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
         g.drawImage(image, t, null);
     }
 
-    // The custom icon portrait, set in the reference region, drawn scaled to
-    // region; its clip stays the reference so the editor fits new icons to it.
-    function paintCustomEncounterIcon(
-        g,
-        diy,
-        sheet,
-        portrait,
-        region,
-        reference
-    ) {
-        diy.settings.setRegion(ENCOUNTER_CLIP_KEY, reference);
+    // The custom icon portrait, placed in its clip region, drawn scaled from
+    // the clip to fit region, centered, keeping its proportions. Settings
+    // can't change while a sheet paints; the handler keeps the clip in step
+    // with the faces.
+    function paintCustomEncounterIcon(g, diy, sheet, portrait, region) {
+        var clip = diy.settings.getRegion(ENCOUNTER_CLIP_KEY);
+        var box = fitBox(clip, region.x, region.y, region.width, region.height);
         var saved = g.getTransform();
         try {
-            g.translate(region.x, region.y);
-            g.scale(
-                region.width / reference.width,
-                region.height / reference.height
-            );
-            g.translate(-reference.x, -reference.y);
+            g.translate(box.x, box.y);
+            g.scale(box.width / clip.width, box.height / clip.height);
+            g.translate(-clip.x, -clip.y);
             portrait.paint(g, sheet.getRenderTarget());
         } finally {
             g.setTransform(saved);
         }
     }
 
-    // reference: the region a custom icon's scale is set against, or null to
-    // use this face's own
-    function paintEncounterIcon(g, diy, sheet, face, portrait, reference) {
+    function paintEncounterIcon(g, diy, sheet, face, portrait) {
         var settings = diy.settings;
         var name = String(settings.get('Encounter', ''));
         var custom = String(settings.get('EncounterType', '0')) !== '0';
@@ -177,8 +230,10 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
             let returned = name.substring(8);
             let icon = custom
                 ? portrait.getImage()
-                : imageutils.ImageUtils.get(
-                      iconPath(ReturnedIcons[returned] || returned)
+                : setIcon(ReturnedIcons[returned] || returned).toBufferedImage(
+                      28,
+                      28,
+                      true
                   );
             paintIcon(
                 g,
@@ -189,30 +244,27 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
         }
 
         if (name.substring(0, 6) === 'Return') {
-            paintIcon(
+            setIcon(name).paint(
                 g,
-                imageutils.ImageUtils.get(iconPath(name)),
-                face.collectorRegion(diy, 'ReturnEncounterIcon', true)
+                face.collectorRegion(diy, 'ReturnEncounterIcon', true),
+                true
             );
             return;
         }
 
         if (!custom) {
-            paintIcon(
+            setIcon(name).paint(
                 g,
-                imageutils.ImageUtils.get(iconPath(name)),
-                face.collectorRegion(diy, 'EncounterIcon', true)
+                face.collectorRegion(diy, 'EncounterIcon', true),
+                true
             );
         } else {
-            // portrait clips are whole pixels
-            let region = face.collectorRegion(diy, 'EncounterIcon');
             paintCustomEncounterIcon(
                 g,
                 diy,
                 sheet,
                 portrait,
-                region,
-                reference || region
+                face.collectorRegion(diy, 'EncounterIcon', true)
             );
         }
     }
@@ -283,14 +335,7 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
         } else x -= 21;
 
         if (encounterIcon)
-            paintEncounterIcon(
-                g,
-                diy,
-                sheet,
-                face,
-                collector.encounter,
-                collector.encounterReference
-            );
+            paintEncounterIcon(g, diy, sheet, face, collector.encounter);
 
         if (
             encounterNumber !== false &&
@@ -324,14 +369,7 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
     }
 
     function paintEncounterIconOnly(g, diy, sheet, face, collector) {
-        paintEncounterIcon(
-            g,
-            diy,
-            sheet,
-            face,
-            collector.encounter,
-            collector.encounterReference
-        );
+        paintEncounterIcon(g, diy, sheet, face, collector.encounter);
     }
 
     return {
