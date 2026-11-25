@@ -31,7 +31,13 @@ function collectorInfo(calls) {
     const types = {
         'java.awt.AlphaComposite': { DstOut: 'dstOut' },
         'java.awt.RenderingHints': {},
-        'java.awt.geom.AffineTransform': { getTranslateInstance: () => ({ scale() {} }) },
+        'java.awt.Color': { BLACK: 'black' },
+        'java.awt.geom.Ellipse2D$Double': function (...shape) {
+            this.ellipse = shape;
+        },
+        'java.awt.geom.AffineTransform': {
+            getTranslateInstance: (x, y) => ({ x, y, scale(sx, sy) { Object.assign(this, { sx, sy }); } }),
+        },
         'ca.cgjennings.graphics.filters.InversionFilter': function () {
             this.filter = image => ({ inverted: image });
         },
@@ -41,10 +47,12 @@ function collectorInfo(calls) {
         ImageUtils: {
             get: key => ({ image: key, getWidth: () => 36, getHeight: () => 33 }),
             create: (w, h) => {
-                const image = { w, h, drawn: [], getWidth: () => w, getHeight: () => h };
+                const image = { w, h, drawn: [], filled: [], getWidth: () => w, getHeight: () => h };
                 image.createGraphics = () => ({
                     setRenderingHint() {},
-                    setComposite() {},
+                    setPaint(paint) { image.filled.push(paint); },
+                    fill(shape) { image.filled.push(shape.ellipse); },
+                    setComposite(composite) { image.drawn.push(composite); },
                     dispose() {},
                     drawImage(src, ...rest) { image.drawn.push([src, ...rest.slice(0, 4)]); },
                 });
@@ -96,38 +104,60 @@ test('a return-to icon paints its own SVG in the return region', () => {
     ]);
 });
 
-test('a filled return-to disc cuts out the returned set icon, fit whole', () => {
+// a face whose return disc and own icon regions differ, as on a treachery
+function fillFace() {
+    const regions = {
+        ReturnEncounterIcon: { x: 10, y: 20, width: 36, height: 33 },
+        EncounterIcon: { x: 17.5, y: 25, width: 21, height: 21 },
+    };
+    return face({ fillReturnEncounterIcon: true, collectorRegion: (_, name) => ({ name, ...regions[name] }) });
+}
+
+test('a filled return-to disc is drawn at device pixels, cut to the region', () => {
+    const drawn = [];
+    const g = { getTransform: () => ({ getScaleX: () => 2 }), drawImage: (image, t) => drawn.push([image, t]) };
+    collectorInfo([]).paintEncounterIcon(
+        g, { settings: settings({ Encounter: 'ReturnToTheGathering' }) }, {}, fillFace(), { encounter: null }
+    );
+    const [[image, t]] = drawn;
+    assert.deepEqual([image.w, image.h], [72, 66]);
+    assert.deepEqual(image.filled, ['black', [0, 0, 72, 72]]);
+    assert.deepEqual([t.x, t.y, t.sx, t.sy], [10, 20, 0.5, 0.5]);
+});
+
+test('a filled return-to disc cuts out the returned set icon where the face draws its own', () => {
     const calls = [];
     const drawn = [];
-    const g = { getTransform: () => ({ getScaleX: () => 1 }), drawImage: image => drawn.push(image) };
+    const g = { getTransform: () => ({ getScaleX: () => 2 }), drawImage: image => drawn.push(image) };
     collectorInfo(calls).paintEncounterIcon(
         g,
         { settings: settings({ Encounter: 'ReturnToExtracurricularActivities' }) },
         {},
-        face({ fillReturnEncounterIcon: true }),
+        fillFace(),
         { encounter: null }
     );
     const id = 'res://ArkhamHorrorLCG/icons/AHLCG-ExtracurricularActivity.svg';
-    assert.deepEqual(calls, [['bitmap', id, 28, 28, true]]);
-    const [base, cut] = drawn[0].drawn;
-    assert.equal(base[0].image, 'ArkhamHorrorLCG/overlays/AHLCG-ReturnToBase.png');
-    assert.deepEqual(cut.slice(1), [4, 4, null]);
-    assert.deepEqual(cut[0].drawn.map(d => [d[0].bitmap, ...d.slice(1)]), [[id, 0, 0, 28, 28]]);
+    assert.deepEqual(calls, [['bitmap', id, 42, 42, true]]);
+    const [composite, [icon, t]] = drawn[0].drawn;
+    assert.equal(composite, 'dstOut');
+    assert.equal(icon.bitmap, id);
+    assert.deepEqual([t.x, t.y, t.sx, t.sy], [15, 10, 1, 1]);
 });
 
-test('a custom return-to icon is fit whole in the disc, not stretched', () => {
+test('a custom return-to icon is fit whole in the cut out, not stretched', () => {
     const drawn = [];
-    const g = { getTransform: () => ({ getScaleX: () => 1 }), drawImage: image => drawn.push(image) };
+    const g = { getTransform: () => ({ getScaleX: () => 2 }), drawImage: image => drawn.push(image) };
     const tall = { getWidth: () => 10, getHeight: () => 20 };
     collectorInfo([]).paintEncounterIcon(
         g,
         { settings: settings({ Encounter: 'ReturnToTheGathering', EncounterType: '-1' }) },
         {},
-        face({ fillReturnEncounterIcon: true }),
+        fillFace(),
         { encounter: { getImage: () => tall } }
     );
-    const fitted = drawn[0].drawn[1][0];
-    assert.deepEqual(fitted.drawn.map(d => d.slice(1)), [[7, 0, 14, 28]]);
+    const [, [icon, t]] = drawn[0].drawn;
+    assert.equal(icon, tall);
+    assert.deepEqual([t.x, t.y, t.sx, t.sy], [25.5, 10, 2.1, 2.1]);
 });
 
 test('a built-in collection icon is a bitmap at the pixels the region is drawn with', () => {

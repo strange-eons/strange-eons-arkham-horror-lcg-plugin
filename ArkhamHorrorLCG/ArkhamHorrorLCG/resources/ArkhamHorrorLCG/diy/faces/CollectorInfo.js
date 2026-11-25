@@ -15,6 +15,8 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
 ) {
     const AlphaComposite = Java.type('java.awt.AlphaComposite');
     const AffineTransform = Java.type('java.awt.geom.AffineTransform');
+    const Color = Java.type('java.awt.Color');
+    const Ellipse = Java.type('java.awt.geom.Ellipse2D$Double');
     const InversionFilter = Java.type(
         'ca.cgjennings.graphics.filters.InversionFilter'
     );
@@ -165,24 +167,39 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
         box.drawAsSingleLine(g, region);
     }
 
-    // the icon cut out of the return-to disc
-    function returnToImage(icon) {
-        var ImageUtils = imageutils.ImageUtils;
-        var image = ImageUtils.create(36, 33, true);
-        var g = image.createGraphics();
+    // The return-to disc in region, drawn with the pixels g draws it with: a
+    // black circle as wide as the region, cut off at its height, with icon
+    // cut out of it, fit and centered in iconRegion.
+    function returnToImage(g, region, iconRegion, icon) {
+        var size = pixelSize(g, region);
+        var sx = size.width / region.width;
+        var sy = size.height / region.height;
+        var image = imageutils.ImageUtils.create(size.width, size.height, true);
+        var ig = image.createGraphics();
         try {
-            g.drawImage(
-                ImageUtils.get(
-                    'ArkhamHorrorLCG/overlays/AHLCG-ReturnToBase.png'
-                ),
-                0,
-                0,
-                null
+            ig.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON
             );
-            g.setComposite(AlphaComposite.DstOut);
-            g.drawImage(fitImage(icon, 28, 28), 4, 4, null);
+            ig.setRenderingHint(
+                RenderingHints.KEY_INTERPOLATION,
+                RenderingHints.VALUE_INTERPOLATION_BICUBIC
+            );
+            ig.setPaint(Color.BLACK);
+            ig.fill(new Ellipse(0, 0, size.width, region.width * sy));
+            ig.setComposite(AlphaComposite.DstOut);
+            let box = fitBox(
+                icon,
+                (iconRegion.x - region.x) * sx,
+                (iconRegion.y - region.y) * sy,
+                iconRegion.width * sx,
+                iconRegion.height * sy
+            );
+            let t = AffineTransform.getTranslateInstance(box.x, box.y);
+            t.scale(box.width / icon.getWidth(), box.height / icon.getHeight());
+            ig.drawImage(icon, t, null);
         } finally {
-            g.dispose();
+            ig.dispose();
         }
         return image;
     }
@@ -226,20 +243,19 @@ define(['faces/FaceUtils', 'se/imageutils', 'se/strings', 'se/java'], function (
         var name = String(settings.get('Encounter', ''));
         var custom = String(settings.get('EncounterType', '0')) !== '0';
 
+        // the returned set's icon is cut out where the face draws its own
         if (name.substring(0, 6) === 'Return' && face.fillReturnEncounterIcon) {
             let returned = name.substring(8);
+            let region = face.collectorRegion(diy, 'ReturnEncounterIcon', true);
+            let iconRegion = face.collectorRegion(diy, 'EncounterIcon', true);
             let icon = custom
                 ? portrait.getImage()
-                : setIcon(ReturnedIcons[returned] || returned).toBufferedImage(
-                      28,
-                      28,
-                      true
+                : setIconBitmap(
+                      g,
+                      ReturnedIcons[returned] || returned,
+                      iconRegion
                   );
-            paintIcon(
-                g,
-                returnToImage(icon),
-                face.collectorRegion(diy, 'ReturnEncounterIcon', true)
-            );
+            paintIcon(g, returnToImage(g, region, iconRegion, icon), region);
             return;
         }
 
