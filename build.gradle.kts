@@ -88,7 +88,9 @@ strangeEonsRenderTest {
             renderSuffix = "-1.png"
             masterSuffix = "-0.png"
             fun trimMask(glob: String, x: Int, y: Int, w: Int, h: Int) = mask(glob, x + bleed, y + bleed, w, h)
-            excludes.addAll("**/filled-1.png", "components/key/*", "**/refReturnGathering-1.png")
+            excludes.addAll("**/filled-1.png", "components/key/*")
+            // photo references whose backs differ from their fronts
+            for (ref in listOf("refExtracurricular", "refEztli", "refGathering", "refReturnGathering")) excludes.add("**/$ref-1.png")
             for (variant in listOf("reversed", "reversedReturnTo")) trimMask("components/act/$variant-1.png", 988, 718, 45, 22)
             for (variant in listOf("reversed", "reversedReturnTo", "reversedPerInvestigator")) {
                 trimMask("components/agenda/$variant-1.png", 564, 718, 45, 22)
